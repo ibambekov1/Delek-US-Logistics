@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delek US — Pipeline & Refinery Operations Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0d1117;
+    --bg-card: #161b22;
+    --bg-card-hover: #1c2128;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --accent-crude: #f0883e;
+    --accent-refined: #58a6ff;
+    --accent-gathering: #3fb950;
+    --accent-jv: #d2a8ff;
+    --accent-water: #79c0ff;
+    --accent-refinery: #ff7b72;
+    --accent-terminal: #ffd700;
+    --accent-biodiesel: #56d364;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    grid-template-rows: 56px 1fr;
+  }
+
+  /* ─── TOP BAR ─── */
+  header {
+    grid-column: 1 / -1;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+  }
+  header .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header .brand .logo {
+    width: 28px; height: 28px;
+    background: var(--accent-crude);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: var(--bg-dark);
+  }
+  header .brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  header .brand h1 span { color: var(--text-secondary); font-weight: 400; }
+  header .meta {
+    display: flex; gap: 24px; font-size: 12px; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  header .meta .tag {
+    padding: 3px 8px;
+    background: rgba(240,136,62,0.12);
+    border: 1px solid rgba(240,136,62,0.25);
+    border-radius: 4px;
+    color: var(--accent-crude);
+  }
+
+  /* ─── SIDEBAR ─── */
+  aside {
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  aside::-webkit-scrollbar { width: 6px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .sidebar-section {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .sidebar-section-header {
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .sidebar-section-header:hover { background: var(--bg-card-hover); }
+  .sidebar-section-header .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .sidebar-section-header .arrow {
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  .sidebar-section.collapsed .arrow { transform: rotate(-90deg); }
+  .sidebar-section.collapsed .sidebar-section-body { display: none; }
+  .sidebar-section-body { padding: 0 14px 14px; }
+
+  /* Asset cards */
+  .asset-card {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .asset-card:last-child { border-bottom: none; }
+  .asset-card:hover .asset-name { color: var(--accent-crude); }
+  .asset-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    transition: color 0.15s;
+  }
+  .asset-detail {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .asset-detail .label { color: var(--text-muted); }
+  .asset-badges { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+  .badge-crude { background: rgba(240,136,62,0.12); color: var(--accent-crude); border: 1px solid rgba(240,136,62,0.2); }
+  .badge-refined { background: rgba(88,166,255,0.12); color: var(--accent-refined); border: 1px solid rgba(88,166,255,0.2); }
+  .badge-gas { background: rgba(63,185,80,0.12); color: var(--accent-gathering); border: 1px solid rgba(63,185,80,0.2); }
+  .badge-water { background: rgba(121,192,255,0.12); color: var(--accent-water); border: 1px solid rgba(121,192,255,0.2); }
+  .badge-jv { background: rgba(210,168,255,0.12); color: var(--accent-jv); border: 1px solid rgba(210,168,255,0.2); }
+  .badge-asphalt { background: rgba(139,148,158,0.12); color: var(--text-secondary); border: 1px solid rgba(139,148,158,0.2); }
+
+  /* Stat rows */
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-secondary); }
+  .stat-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* Bar chart */
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .bar-item { display: flex; align-items: center; gap: 8px; }
+  .bar-label { font-size: 11px; color: var(--text-secondary); width: 90px; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 18px; background: rgba(48,54,61,0.5); border-radius: 4px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 6px; font-size: 10px; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--bg-dark); transition: width 0.8s ease; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .legend-swatch { width: 16px; height: 3px; border-radius: 2px; }
+
+  /* ─── MAP ─── */
+  #map {
+    width: 100%; height: 100%;
+    background: var(--bg-dark);
+  }
+
+  /* Custom popup */
+  .leaflet-popup-content-wrapper {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+    padding: 0 !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+  .leaflet-popup-tip { background: var(--bg-card) !important; border: 1px solid var(--border) !important; }
+  .leaflet-popup-content { margin: 0 !important; width: 300px !important; }
+  .popup-inner { padding: 16px; }
+  .popup-inner h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .popup-inner .popup-type { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .popup-inner .popup-stat { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+  .popup-inner .popup-stat:last-child { border-bottom: none; }
+  .popup-inner .popup-stat .ps-label { color: var(--text-secondary); }
+  .popup-inner .popup-stat .ps-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+  .popup-products { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .popup-products .pp-tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 3px;
+    background: rgba(88,166,255,0.1); color: var(--accent-refined);
+    border: 1px solid rgba(88,166,255,0.2);
+  }
+
+  /* Flow animation keyframe for pipeline decorators */
+  @keyframes dash { to { stroke-dashoffset: -30; } }
+
+  /* Leaflet attribution */
+  .leaflet-control-attribution { font-size: 9px !important; background: rgba(13,17,23,0.85) !important; color: var(--text-muted) !important; }
+  .leaflet-control-attribution a { color: var(--accent-refined) !important; }
+  .leaflet-control-zoom a { background: var(--bg-card) !important; color: var(--text-primary) !important; border-color: var(--border) !important; }
+  .leaflet-control-zoom a:hover { background: var(--bg-card-hover) !important; }
+
+  /* Detail panel overlay */
+  #detail-panel {
+    position: fixed;
+    top: 56px; right: 0;
+    width: 420px; height: calc(100vh - 56px);
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    z-index: 900;
+    overflow-y: auto;
+    padding: 24px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -8px 0 30px rgba(0,0,0,0.3);
+  }
+  #detail-panel.open { transform: translateX(0); }
+  #detail-panel::-webkit-scrollbar { width: 6px; }
+  #detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .panel-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 28px; height: 28px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .panel-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+  .panel-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; padding-right: 40px; }
+  .panel-subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .panel-section { margin-bottom: 20px; }
+  .panel-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .panel-metric {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+  .panel-metric .pm-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .panel-metric .pm-label { font-size: 10px; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .panel-metric.full { grid-column: 1 / -1; }
+
+  .panel-list-item {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .panel-list-item:last-child { border-bottom: none; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; }
+    aside { display: none; }
+    #detail-panel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">DK</div>
+    <h1>Delek US <span>— Pipeline & Refinery Operations</span></h1>
+  </div>
+  <div class="meta">
+    <span>NYSE: DK / DKL</span>
+    <span class="tag">302,000 BPD Combined Capacity</span>
+    <span>~1,500 mi Pipeline Network</span>
+  </div>
+</header>
+
+<aside id="sidebar"></aside>
+
+<div id="map"></div>
+
+<div id="detail-panel">
+  <button class="panel-close" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════
+const REFINERIES = [
+  {
+    id: 'tyler',
+    name: 'Tyler Refinery',
+    location: [32.3513, -95.3011],
+    capacity_bpd: 75000,
+    year_built: 1940,
+    acquired: 2005,
+    crude_source: 'East Texas, Permian Basin via Red River',
+    products: ['Gasoline', 'Diesel', 'Jet Fuel', 'LPG'],
+    markets: 'Northeast Texas',
+    nelson_complexity: 10.1,
+    storage_bbl: 2100000,
+    notes: 'Original Delek refining asset. Acquired with pipeline & terminal assets. Includes delayed coker (10,000 bpd) and FCCU (20,000 bpd).'
+  },
+  {
+    id: 'big_spring',
+    name: 'Big Spring Refinery',
+    location: [32.2502, -101.4787],
+    capacity_bpd: 73000,
+    year_built: 1929,
+    acquired: 2017,
+    crude_source: 'Permian Basin (direct gathering system)',
+    products: ['Gasoline', 'Diesel', 'Asphalt', 'Jet Fuel', 'LPG'],
+    markets: 'West Texas, Southwest US',
+    nelson_complexity: 11.8,
+    storage_bbl: 3200000,
+    notes: '50 miles from Permian Basin. 75 storage tanks, 4 salt wells. DOE-selected for carbon capture pilot (145,000 mt CO₂/yr). Expansion planned to 100,000 bpd crude unit.'
+  },
+  {
+    id: 'el_dorado',
+    name: 'El Dorado Refinery',
+    location: [33.2076, -92.6663],
+    capacity_bpd: 80000,
+    year_built: 1922,
+    acquired: 2011,
+    crude_source: 'Local AR production, Cushing via Red River',
+    products: ['Gasoline', 'Diesel', 'Asphalt', 'LPG'],
+    markets: 'Central Midwest, Mississippi River Corridor',
+    nelson_complexity: 9.6,
+    storage_bbl: 2600000,
+    notes: 'Northernmost Delek refinery. Sits atop ~1,000 mi local gathering. Expanded 2014. Terminals in Memphis & Nashville, TN.'
+  },
+  {
+    id: 'krotz_springs',
+    name: 'Krotz Springs Refinery',
+    location: [30.5390, -91.7540],
+    capacity_bpd: 74000,
+    year_built: 1980,
+    acquired: 2017,
+    crude_source: 'Gulf Coast, Local LA production',
+    products: ['Gasoline', 'Jet Fuel', 'High-Sulfur Diesel', 'LPG', 'Isobutane', 'Polygas', 'Reformate', 'Naphtha', 'Light Cycle Oil'],
+    markets: 'Louisiana, Gulf Coast',
+    nelson_complexity: 8.9,
+    storage_bbl: 1800000,
+    notes: 'One of the youngest US refineries. $150M investment announced. Alkylation unit added 2019. Dock at Port of Krotz Springs on Atchafalaya River.'
+  }
+];
+
+const TERMINALS = [
+  { id: 'memphis_term', name: 'Memphis Terminal', location: [35.1495, -90.0490], type: 'Product Distribution', products: ['Gasoline', 'Diesel'], served_by: 'El Dorado Refinery' },
+  { id: 'nashville_term', name: 'Nashville Terminal', location: [36.1627, -86.7816], type: 'Product Distribution', products: ['Gasoline', 'Diesel'], served_by: 'El Dorado Refinery' },
+  { id: 'mt_pleasant_term', name: 'Mt. Pleasant Terminal', location: [33.1568, -94.9680], type: 'Product Distribution', products: ['Gasoline', 'Diesel'], served_by: 'Tyler Refinery' },
+  { id: 'big_spring_truck', name: 'Big Spring Truck Unloading', location: [32.2520, -101.4650], type: 'Crude Receiving', products: ['Crude Oil'], served_by: 'Big Spring Refinery', capacity: '10,000 bpd' }
+];
+
+const BIODIESEL = [
+  { id: 'cleburne', name: 'Cleburne Biodiesel Plant', location: [32.3474, -97.3867], capacity: '~13 MMgal/yr' },
+  { id: 'crossett', name: 'Crossett Biodiesel Plant', location: [33.1282, -91.9613], capacity: '~13 MMgal/yr' },
+  { id: 'new_albany', name: 'New Albany Biodiesel Plant', location: [34.4940, -89.0078], capacity: '~14 MMgal/yr' }
+];
+
+const PIPELINES = [
+  {
+    id: 'east_texas_crude',
+    name: 'East Texas Crude Logistics System',
+    type: 'crude',
+    color: '#f0883e',
+    path: [[32.77, -94.40], [32.60, -94.80], [32.45, -95.10], [32.35, -95.30]],
+    diameter: '10"-16"',
+    length_mi: 65,
+    capacity_bpd: 75000,
+    throughput_bpd: 35000,
+    products: 'Crude Oil',
+    notes: 'Nettleton & McMurrey pipelines to Tyler Refinery. 10-yr MVC with Delek Holdings at 35,000 bpd fee basis.'
+  },
+  {
+    id: 'red_river',
+    name: 'Red River Pipeline (JV — 33%)',
+    type: 'jv',
+    color: '#d2a8ff',
+    path: [[35.9496, -96.7498], [35.50, -96.20], [35.00, -95.60], [34.50, -95.20], [34.00, -94.80], [33.50, -94.90], [33.10, -95.00], [32.70, -95.10], [32.50, -94.75]],
+    diameter: '16"',
+    length_mi: 370,
+    capacity_bpd: 235000,
+    throughput_bpd: 100000,
+    products: 'Crude Oil',
+    notes: 'Cushing, OK → Longview, TX. 33% DKL / 67% Plains. Expanded from 150k to 235k bpd. Feeds Tyler, El Dorado & Krotz Springs with Cushing-sourced crude.'
+  },
+  {
+    id: 'midland_gathering',
+    name: 'Midland (Big Spring) Gathering System',
+    type: 'gathering',
+    color: '#3fb950',
+    path: [[32.55, -101.80], [32.45, -101.70], [32.35, -101.55], [32.30, -101.50], [32.25, -101.48]],
+    diameter: '4"-10"',
+    length_mi: 200,
+    capacity_bpd: 350000,
+    throughput_bpd: 120000,
+    products: 'Crude Oil',
+    notes: 'Howard, Borden & Martin Counties, TX. MVC of 120,000 bpd from DK + 50,000 bpd 3rd party connection. Feeds Big Spring Refinery.'
+  },
+  {
+    id: 'big_spring_pipeline',
+    name: 'Big Spring–Midland Pipeline',
+    type: 'crude',
+    color: '#f0883e',
+    path: [[32.2502, -101.4787], [32.15, -101.60], [32.05, -101.80], [31.9973, -102.0779]],
+    diameter: '8"',
+    length_mi: 40,
+    capacity_bpd: 50000,
+    throughput_bpd: 35000,
+    products: 'Crude Oil',
+    notes: 'Acquired from Plains Pipeline Sept 2017. Big Spring → Midland.'
+  },
+  {
+    id: 'el_dorado_gathering',
+    name: 'El Dorado/Arkansas Gathering System',
+    type: 'gathering',
+    color: '#3fb950',
+    path: [[33.80, -92.90], [33.60, -92.80], [33.40, -92.70], [33.21, -92.66]],
+    diameter: '2"-8"',
+    length_mi: 600,
+    capacity_bpd: 80000,
+    throughput_bpd: 40000,
+    products: 'Crude Oil',
+    notes: 'Extensive local gathering across southern Arkansas. Nearly 1,000 mi including laterals. Feeds El Dorado Refinery.'
+  },
+  {
+    id: 'tyler_product',
+    name: 'Tyler Product Distribution Pipeline',
+    type: 'refined',
+    color: '#58a6ff',
+    path: [[32.35, -95.30], [32.50, -95.10], [32.70, -94.90], [33.00, -94.80], [33.16, -94.97]],
+    diameter: '6"-10"',
+    length_mi: 80,
+    capacity_bpd: 60000,
+    throughput_bpd: 45000,
+    products: 'Gasoline, Diesel',
+    notes: 'Distributes refined products from Tyler Refinery to NE Texas terminals including Mt. Pleasant.'
+  },
+  {
+    id: 'el_dorado_product',
+    name: 'El Dorado Product Pipeline',
+    type: 'refined',
+    color: '#58a6ff',
+    path: [[33.21, -92.66], [33.50, -92.20], [34.00, -91.50], [34.50, -90.80], [35.15, -90.05]],
+    diameter: '6"-12"',
+    length_mi: 200,
+    capacity_bpd: 60000,
+    throughput_bpd: 35000,
+    products: 'Gasoline, Diesel, Asphalt',
+    notes: 'El Dorado → Memphis Terminal. Connects into Mississippi River corridor distribution network.'
+  },
+  {
+    id: 'wink_to_webster',
+    name: 'Wink to Webster Pipeline (JV — 15%)',
+    type: 'jv',
+    color: '#d2a8ff',
+    path: [[31.75, -103.16], [31.80, -102.50], [31.99, -102.08], [32.10, -101.50], [32.00, -100.50], [31.60, -99.50], [31.00, -98.50], [30.50, -97.50], [30.00, -96.50], [29.70, -95.80], [29.55, -95.30], [29.54, -95.17]],
+    diameter: '36"',
+    length_mi: 650,
+    capacity_bpd: 1500000,
+    throughput_bpd: null,
+    products: 'Crude Oil',
+    notes: 'Wink/Midland → Houston (Webster, Baytown, Texas City, Beaumont). JV: ExxonMobil (operator), Plains, MPLX, Delek (15%), Lotus, Rattler. Integrated with Big Spring gathering.'
+  },
+  {
+    id: 'delaware_gathering',
+    name: 'Delaware Basin Gathering & Processing',
+    type: 'gathering',
+    color: '#3fb950',
+    path: [[32.50, -104.20], [32.35, -104.00], [32.20, -103.80], [32.10, -103.50], [32.05, -103.30]],
+    diameter: '4"-12"',
+    length_mi: 300,
+    capacity_bpd: null,
+    throughput_bpd: null,
+    products: 'Crude Oil, Natural Gas, Water',
+    notes: 'Delaware Basin, NM. Includes Libby 1 & Libby 2 gas processing plants (Lea County, NM). Acquired via 3Bear Energy (2022) and expanded. Crude, gas gathering/processing, water disposal & recycling.'
+  }
+];
+
+const WATER_SYSTEMS = [
+  { id: 'h2o_midstream', name: 'H2O Midstream (Midland Basin)', location: [32.10, -101.90], notes: 'Water gathering & recycling, Midland Basin TX. Acquired by DKL.' },
+  { id: 'gravity', name: 'Gravity Water Midstream', location: [32.25, -102.30], notes: 'Water disposal & recycling operations, Permian Basin. Acquired by DKL.' }
+];
+
+// ═══════════════════════════════════════════════════
+// MAP INIT
+// ═══════════════════════════════════════════════════
+const map = L.map('map', {
+  center: [32.5, -97.5],
+  zoom: 6,
+  zoomControl: true,
+  attributionControl: true
+});
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// Custom icon factory
+function makeIcon(color, size = 14, shape = 'circle') {
+  if (shape === 'diamond') {
+    return L.divIcon({
+      className: '',
+      html: `<svg width="${size+8}" height="${size+8}" viewBox="0 0 ${size+8} ${size+8}"><rect x="${(size+8)/2}" y="2" width="${size*0.7}" height="${size*0.7}" transform="rotate(45 ${(size+8)/2} ${(size+8)/2})" fill="${color}" stroke="#0d1117" stroke-width="2"/></svg>`,
+      iconSize: [size+8, size+8],
+      iconAnchor: [(size+8)/2, (size+8)/2]
+    });
+  }
+  if (shape === 'square') {
+    return L.divIcon({
+      className: '',
+      html: `<svg width="${size+4}" height="${size+4}" viewBox="0 0 ${size+4} ${size+4}"><rect x="2" y="2" width="${size}" height="${size}" rx="3" fill="${color}" stroke="#0d1117" stroke-width="2"/></svg>`,
+      iconSize: [size+4, size+4],
+      iconAnchor: [(size+4)/2, (size+4)/2]
+    });
+  }
+  return L.divIcon({
+    className: '',
+    html: `<svg width="${size+4}" height="${size+4}" viewBox="0 0 ${size+4} ${size+4}"><circle cx="${(size+4)/2}" cy="${(size+4)/2}" r="${size/2}" fill="${color}" stroke="#0d1117" stroke-width="2"/></svg>`,
+    iconSize: [size+4, size+4],
+    iconAnchor: [(size+4)/2, (size+4)/2]
+  });
+}
+
+function refineryIcon() {
+  return L.divIcon({
+    className: '',
+    html: `<svg width="32" height="32" viewBox="0 0 32 32">
+      <rect x="2" y="2" width="28" height="28" rx="6" fill="#ff7b72" stroke="#0d1117" stroke-width="2"/>
+      <text x="16" y="20" text-anchor="middle" fill="#0d1117" font-size="13" font-weight="bold" font-family="sans-serif">R</text>
+    </svg>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// DRAW PIPELINES
+// ═══════════════════════════════════════════════════
+const pipelineLayers = {};
+PIPELINES.forEach(p => {
+  // Background glow
+  const glow = L.polyline(p.path, {
+    color: p.color,
+    weight: 8,
+    opacity: 0.15,
+    smoothFactor: 1.5
+  }).addTo(map);
+
+  // Main line
+  const line = L.polyline(p.path, {
+    color: p.color,
+    weight: 3,
+    opacity: 0.85,
+    smoothFactor: 1.5,
+    dashArray: p.type === 'jv' ? '8 6' : null
+  }).addTo(map);
+
+  // Flow animation overlay
+  const flow = L.polyline(p.path, {
+    color: '#ffffff',
+    weight: 1.5,
+    opacity: 0.3,
+    dashArray: '4 26',
+    smoothFactor: 1.5,
+    className: 'flow-line'
+  }).addTo(map);
+
+  line.on('click', () => openPipelinePanel(p));
+  line.on('mouseover', () => { line.setStyle({ weight: 5, opacity: 1 }); });
+  line.on('mouseout', () => { line.setStyle({ weight: 3, opacity: 0.85 }); });
+
+  // Tooltip
+  line.bindTooltip(`<b>${p.name}</b><br>${p.length_mi} mi · ${p.products}`, {
+    sticky: true,
+    className: 'pipeline-tooltip'
+  });
+
+  pipelineLayers[p.id] = { glow, line, flow };
+});
+
+// ═══════════════════════════════════════════════════
+// DRAW REFINERIES
+// ═══════════════════════════════════════════════════
+REFINERIES.forEach(r => {
+  const marker = L.marker(r.location, { icon: refineryIcon() }).addTo(map);
+  marker.on('click', () => openRefineryPanel(r));
+  marker.bindTooltip(`<b>${r.name}</b><br>${r.capacity_bpd.toLocaleString()} bpd`, { direction: 'top', offset: [0, -16] });
+});
+
+// ═══════════════════════════════════════════════════
+// DRAW TERMINALS
+// ═══════════════════════════════════════════════════
+TERMINALS.forEach(t => {
+  const marker = L.marker(t.location, { icon: makeIcon('#ffd700', 10, 'square') }).addTo(map);
+  marker.bindTooltip(`<b>${t.name}</b><br>${t.type}`, { direction: 'top', offset: [0, -8] });
+  marker.on('click', () => {
+    openGenericPanel(t.name, 'Terminal / Facility', [
+      ['Type', t.type],
+      ['Products', t.products.join(', ')],
+      ['Served By', t.served_by],
+      ...(t.capacity ? [['Capacity', t.capacity]] : [])
+    ]);
+  });
+});
+
+// ═══════════════════════════════════════════════════
+// DRAW BIODIESEL
+// ═══════════════════════════════════════════════════
+BIODIESEL.forEach(b => {
+  const marker = L.marker(b.location, { icon: makeIcon('#56d364', 10, 'diamond') }).addTo(map);
+  marker.bindTooltip(`<b>${b.name}</b><br>${b.capacity}`, { direction: 'top', offset: [0, -8] });
+});
+
+// ═══════════════════════════════════════════════════
+// DRAW WATER SYSTEMS
+// ═══════════════════════════════════════════════════
+WATER_SYSTEMS.forEach(w => {
+  const marker = L.marker(w.location, { icon: makeIcon('#79c0ff', 10, 'circle') }).addTo(map);
+  marker.bindTooltip(`<b>${w.name}</b><br>Water Midstream`, { direction: 'top', offset: [0, -8] });
+});
+
+// Key locations labels
+const keyLocations = [
+  { name: 'Cushing, OK', location: [35.985, -96.77] },
+  { name: 'Wink, TX', location: [31.75, -103.16] },
+  { name: 'Midland, TX', location: [31.997, -102.078] },
+  { name: 'Webster/Houston, TX', location: [29.54, -95.12] },
+  { name: 'Longview, TX', location: [32.50, -94.74] },
+];
+keyLocations.forEach(kl => {
+  L.marker(kl.location, {
+    icon: L.divIcon({
+      className: '',
+      html: `<div style="font-size:10px;color:#8b949e;font-family:'JetBrains Mono',monospace;white-space:nowrap;text-shadow:0 0 6px #0d1117, 0 0 3px #0d1117;">${kl.name}</div>`,
+      iconAnchor: [-6, 6]
+    })
+  }).addTo(map);
+});
+
+// ═══════════════════════════════════════════════════
+// CSS for flow animation
+// ═══════════════════════════════════════════════════
+const style = document.createElement('style');
+style.textContent = `.flow-line { animation: dash 2s linear infinite; }
+.pipeline-tooltip { background: #161b22 !important; color: #e6edf3 !important; border: 1px solid #30363d !important; border-radius: 6px !important; font-family: 'DM Sans', sans-serif !important; font-size: 12px !important; padding: 6px 10px !important; box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important; }
+.pipeline-tooltip::before { border-bottom-color: #30363d !important; }`;
+document.head.appendChild(style);
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR BUILD
+// ═══════════════════════════════════════════════════
+function buildSidebar() {
+  const sb = document.getElementById('sidebar');
+
+  // System overview
+  sb.innerHTML = `
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-crude)"></div>
+        SYSTEM OVERVIEW
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        <div class="stat-row"><span class="stat-label">Combined Capacity</span><span class="stat-value" style="color:var(--accent-refinery)">302,000 bpd</span></div>
+        <div class="stat-row"><span class="stat-label">Pipeline Miles</span><span class="stat-value">~1,500 mi</span></div>
+        <div class="stat-row"><span class="stat-label">Gathering System</span><span class="stat-value">~600+ mi</span></div>
+        <div class="stat-row"><span class="stat-label">Storage Capacity</span><span class="stat-value">8.5 MMbbl</span></div>
+        <div class="stat-row"><span class="stat-label">Refineries</span><span class="stat-value">4</span></div>
+        <div class="stat-row"><span class="stat-label">Biodiesel Plants</span><span class="stat-value">3 (~40 MMgal/yr)</span></div>
+        <div class="stat-row"><span class="stat-label">Operating States</span><span class="stat-value">TX, AR, LA, OK, TN</span></div>
+        <div class="stat-row"><span class="stat-label">Parent / MLP</span><span class="stat-value">DK / DKL</span></div>
+        <div class="stat-row"><span class="stat-label">DK Ownership of DKL</span><span class="stat-value">~63.3%</span></div>
+        <div class="bar-chart" style="margin-top:12px">
+          <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Refinery Capacity (bpd)</div>
+          ${REFINERIES.map(r => `
+            <div class="bar-item">
+              <div class="bar-label">${r.name.replace(' Refinery','')}</div>
+              <div class="bar-track">
+                <div class="bar-fill" style="width:${(r.capacity_bpd/80000)*100}%;background:var(--accent-refinery)">${r.capacity_bpd.toLocaleString()}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="legend" style="margin-top:12px">
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--accent-crude)"></div>Crude Pipeline</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--accent-refined)"></div>Product Pipeline</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--accent-gathering)"></div>Gathering System</div>
+          <div class="legend-item"><div class="legend-swatch" style="background:var(--accent-jv);border-style:dashed"></div>Joint Venture</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-refinery)"></div>
+        REFINERIES
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        ${REFINERIES.map(r => `
+          <div class="asset-card" onclick="flyToRefinery('${r.id}')">
+            <div class="asset-name">${r.name}</div>
+            <div class="asset-detail">
+              <span class="label">Capacity:</span> ${r.capacity_bpd.toLocaleString()} bpd &nbsp;·&nbsp; <span class="label">Est.</span> ${r.year_built}<br>
+              <span class="label">Source:</span> ${r.crude_source}
+            </div>
+            <div class="asset-badges">
+              ${r.products.map(p => {
+                const cls = p.includes('Gasoline') || p.includes('Diesel') || p.includes('Jet') ? 'badge-refined' :
+                            p.includes('Asphalt') ? 'badge-asphalt' : 'badge-gas';
+                return `<span class="badge ${cls}">${p}</span>`;
+              }).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-crude)"></div>
+        PIPELINES & GATHERING
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        ${PIPELINES.map(p => `
+          <div class="asset-card" onclick="flyToPipeline('${p.id}')">
+            <div class="asset-name">${p.name}</div>
+            <div class="asset-detail">
+              <span class="label">Length:</span> ${p.length_mi} mi &nbsp;·&nbsp; <span class="label">Dia:</span> ${p.diameter}<br>
+              ${p.capacity_bpd ? `<span class="label">Cap:</span> ${p.capacity_bpd.toLocaleString()} bpd` : ''}
+              ${p.throughput_bpd ? ` · <span class="label">MVC:</span> ${p.throughput_bpd.toLocaleString()} bpd` : ''}
+            </div>
+            <div class="asset-badges">
+              <span class="badge badge-${p.type === 'crude' ? 'crude' : p.type === 'refined' ? 'refined' : p.type === 'gathering' ? 'gas' : 'jv'}">${p.products}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="sidebar-section collapsed">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-terminal)"></div>
+        TERMINALS & FACILITIES
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        ${TERMINALS.map(t => `
+          <div class="asset-card">
+            <div class="asset-name">${t.name}</div>
+            <div class="asset-detail">
+              <span class="label">Type:</span> ${t.type}<br>
+              <span class="label">Served by:</span> ${t.served_by}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="sidebar-section collapsed">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-biodiesel)"></div>
+        BIODIESEL & RENEWABLES
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        <div class="stat-row"><span class="stat-label">Total Capacity</span><span class="stat-value">~40 MMgal/yr</span></div>
+        ${BIODIESEL.map(b => `
+          <div class="asset-card">
+            <div class="asset-name">${b.name}</div>
+            <div class="asset-detail"><span class="label">Capacity:</span> ${b.capacity}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="sidebar-section collapsed">
+      <div class="sidebar-section-header" onclick="toggleSection(this)">
+        <div class="dot" style="background:var(--accent-water)"></div>
+        WATER MIDSTREAM
+        <span class="arrow">▼</span>
+      </div>
+      <div class="sidebar-section-body">
+        ${WATER_SYSTEMS.map(w => `
+          <div class="asset-card">
+            <div class="asset-name">${w.name}</div>
+            <div class="asset-detail">${w.notes}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════
+function toggleSection(header) {
+  header.parentElement.classList.toggle('collapsed');
+}
+
+function flyToRefinery(id) {
+  const r = REFINERIES.find(x => x.id === id);
+  if (r) {
+    map.flyTo(r.location, 10, { duration: 1 });
+    openRefineryPanel(r);
+  }
+}
+
+function flyToPipeline(id) {
+  const p = PIPELINES.find(x => x.id === id);
+  if (p && pipelineLayers[id]) {
+    map.flyToBounds(pipelineLayers[id].line.getBounds().pad(0.3), { duration: 1 });
+    openPipelinePanel(p);
+  }
+}
+
+function openRefineryPanel(r) {
+  const panel = document.getElementById('detail-panel');
+  const content = document.getElementById('panel-content');
+  const utilization = Math.round((r.capacity_bpd * 0.88) / r.capacity_bpd * 100);
+
+  content.innerHTML = `
+    <div class="panel-title">${r.name}</div>
+    <div class="panel-subtitle" style="color:var(--accent-refinery)">Refinery · Delek US Holdings (NYSE: DK)</div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Capacity & Operations</div>
+      <div class="panel-grid">
+        <div class="panel-metric">
+          <div class="pm-value" style="color:var(--accent-refinery)">${r.capacity_bpd.toLocaleString()}</div>
+          <div class="pm-label">Nameplate BPD</div>
+        </div>
+        <div class="panel-metric">
+          <div class="pm-value">${utilization}%</div>
+          <div class="pm-label">Est. Utilization</div>
+        </div>
+        <div class="panel-metric">
+          <div class="pm-value">${r.nelson_complexity}</div>
+          <div class="pm-label">Nelson Complexity</div>
+        </div>
+        <div class="panel-metric">
+          <div class="pm-value">${(r.storage_bbl / 1000000).toFixed(1)}M</div>
+          <div class="pm-label">Storage (bbl)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Details</div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Year Built</span><span>${r.year_built}</span></div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Acquired</span><span>${r.acquired}</span></div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Crude Source</span><span style="text-align:right;max-width:220px">${r.crude_source}</span></div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Primary Markets</span><span style="text-align:right;max-width:220px">${r.markets}</span></div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Location</span><span>${r.location[0].toFixed(4)}, ${r.location[1].toFixed(4)}</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Products</div>
+      <div class="popup-products">
+        ${r.products.map(p => `<span class="pp-tag">${p}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Notes</div>
+      <p style="font-size:12px;line-height:1.6;color:var(--text-secondary)">${r.notes}</p>
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function openPipelinePanel(p) {
+  const panel = document.getElementById('detail-panel');
+  const content = document.getElementById('panel-content');
+  const typeLabel = { crude: 'Crude Oil Pipeline', refined: 'Refined Product Pipeline', gathering: 'Gathering System', jv: 'Joint Venture Pipeline' };
+  const typeColor = { crude: 'var(--accent-crude)', refined: 'var(--accent-refined)', gathering: 'var(--accent-gathering)', jv: 'var(--accent-jv)' };
+
+  content.innerHTML = `
+    <div class="panel-title">${p.name}</div>
+    <div class="panel-subtitle" style="color:${typeColor[p.type]}">${typeLabel[p.type]} · Delek Logistics (NYSE: DKL)</div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Specifications</div>
+      <div class="panel-grid">
+        <div class="panel-metric">
+          <div class="pm-value">${p.length_mi}</div>
+          <div class="pm-label">Length (miles)</div>
+        </div>
+        <div class="panel-metric">
+          <div class="pm-value">${p.diameter}</div>
+          <div class="pm-label">Diameter</div>
+        </div>
+        ${p.capacity_bpd ? `
+        <div class="panel-metric">
+          <div class="pm-value" style="color:${typeColor[p.type]}">${p.capacity_bpd.toLocaleString()}</div>
+          <div class="pm-label">Capacity (BPD)</div>
+        </div>` : ''}
+        ${p.throughput_bpd ? `
+        <div class="panel-metric">
+          <div class="pm-value">${p.throughput_bpd.toLocaleString()}</div>
+          <div class="pm-label">MVC / Throughput (BPD)</div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Products Transported</div>
+      <div class="popup-products">
+        ${p.products.split(', ').map(pr => `<span class="pp-tag">${pr}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Route Details</div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Origin</span><span>${p.path[0][0].toFixed(2)}°N, ${Math.abs(p.path[0][1]).toFixed(2)}°W</span></div>
+      <div class="panel-list-item"><span style="color:var(--text-secondary)">Terminus</span><span>${p.path[p.path.length-1][0].toFixed(2)}°N, ${Math.abs(p.path[p.path.length-1][1]).toFixed(2)}°W</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Notes</div>
+      <p style="font-size:12px;line-height:1.6;color:var(--text-secondary)">${p.notes}</p>
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function openGenericPanel(name, subtitle, rows) {
+  const panel = document.getElementById('detail-panel');
+  const content = document.getElementById('panel-content');
+  content.innerHTML = `
+    <div class="panel-title">${name}</div>
+    <div class="panel-subtitle">${subtitle}</div>
+    <div class="panel-section">
+      ${rows.map(([l, v]) => `<div class="panel-list-item"><span style="color:var(--text-secondary)">${l}</span><span>${v}</span></div>`).join('')}
+    </div>
+  `;
+  panel.classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// Close panel on map click
+map.on('click', closePanel);
+
+// Build sidebar
+buildSidebar();
+
+// Animate flow lines
+(function animateFlows() {
+  document.querySelectorAll('.flow-line').forEach(el => {
+    // CSS animation handles this via the class
+  });
+})();
+</script>
+</body>
+</html>
