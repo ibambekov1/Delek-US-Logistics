@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Operational Intelligence Platform — Midstream O&G</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0e14;
+      --surface:   #111520;
+      --surface2:  #161b26;
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.14);
+      --text:      #e8eaf0;
+      --muted:     #6b7280;
+      --dim:       #3a3f4d;
+      --accent:    #f97316;       /* petroleum orange */
+      --accent2:   #38bdf8;       /* instrument blue */
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --purple:    #a78bfa;
+      --teal:      #2dd4bf;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --r:         6px;
+      --r-lg:      10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HERO HEADER ── */
+    .hero {
+      position: relative;
+      padding: 52px 40px 40px;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 60% at 80% 50%, rgba(249,115,22,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 80% at 10% 50%, rgba(56,189,248,0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .hero-title {
+      font-family: var(--font-head);
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #fff;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+      font-weight: 300;
+      max-width: 640px;
+    }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--green);
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4)} 50%{opacity:.7;box-shadow:0 0 0 5px rgba(34,197,94,0)} }
+
+    .sys-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    .sys-chip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      padding: 4px 11px;
+      border-radius: 20px;
+      border: 1px solid;
+      letter-spacing: .04em;
+    }
+    .chip-green  { color: #4ade80; border-color: rgba(74,222,128,.3);  background: rgba(74,222,128,.06); }
+    .chip-blue   { color: #60a5fa; border-color: rgba(96,165,250,.3);  background: rgba(96,165,250,.06); }
+    .chip-amber  { color: #fbbf24; border-color: rgba(251,191,36,.3);  background: rgba(251,191,36,.06); }
+    .chip-purple { color: #c4b5fd; border-color: rgba(196,181,253,.3); background: rgba(196,181,253,.06); }
+    .chip-teal   { color: #5eead4; border-color: rgba(94,234,212,.3);  background: rgba(94,234,212,.06); }
+
+    /* ── LAYOUT ── */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 40px 60px;
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+      transition: border-color .2s;
+    }
+    .kpi:hover { border-color: var(--border-hi); }
+    .kpi-src {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .kpi-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1;
+    }
+    .kpi-delta { font-family: var(--font-mono); font-size: 10px; margin-top: 5px; }
+    .c-green { color: var(--green); }
+    .c-red   { color: var(--red); }
+    .c-amber { color: var(--amber); }
+    .c-blue  { color: var(--accent2); }
+
+    /* ── GRID ── */
+    .grid-2 { display: grid; grid-template-columns: minmax(0,1.55fr) minmax(0,1fr); gap: 16px; margin-bottom: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-bottom: 20px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 18px 20px;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--border-hi); }
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .card-sub { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+
+    /* ── ALERT LIST ── */
+    .alert-list { display: flex; flex-direction: column; gap: 8px; }
+    .alert {
+      padding: 10px 12px;
+      border-radius: var(--r);
+      border-left: 3px solid;
+      background: var(--surface2);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .alert:hover { background: rgba(255,255,255,.04); }
+    .alert-crit { border-color: var(--red); }
+    .alert-warn { border-color: var(--amber); }
+    .alert-info { border-color: var(--accent2); }
+    .alert-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .alert-body { font-size: 11px; color: var(--muted); }
+    .src-tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .st-scada  { background: rgba(251,191,36,.12); color: #fbbf24; }
+    .st-osipi  { background: rgba(96,165,250,.12);  color: #60a5fa; }
+    .st-sap    { background: rgba(74,222,128,.12);  color: #4ade80; }
+    .st-gen    { background: rgba(196,181,253,.12); color: #c4b5fd; }
+    .st-ra     { background: rgba(94,234,212,.12);  color: #5eead4; }
+
+    /* ── AI FEED ── */
+    .ai-feed { display: flex; flex-direction: column; gap: 10px; }
+    .ai-msg {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 14px;
+    }
+    .ai-msg-head {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .ai-msg-head span:first-child { color: var(--accent); }
+    .ai-msg-body { font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+    .ai-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid var(--border-hi);
+      color: var(--accent2);
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .ai-btn:hover { background: rgba(56,189,248,.08); border-color: var(--accent2); }
+
+    /* ── DATA LINEAGE ── */
+    .lineage-list { display: flex; flex-direction: column; gap: 7px; }
+    .lineage-item {
+      padding: 9px 12px;
+      border-radius: var(--r);
+      border: 1px solid;
+      font-size: 11px;
+    }
+    .lineage-name {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      margin-bottom: 3px;
+    }
+    .li-green  { border-color: rgba(74,222,128,.2);  background: rgba(74,222,128,.04); }
+    .li-blue   { border-color: rgba(96,165,250,.2);  background: rgba(96,165,250,.04); }
+    .li-amber  { border-color: rgba(251,191,36,.2);  background: rgba(251,191,36,.04); }
+    .li-purple { border-color: rgba(196,181,253,.2); background: rgba(196,181,253,.04); }
+    .li-teal   { border-color: rgba(94,234,212,.2);  background: rgba(94,234,212,.04); }
+
+    /* ── PARETO SECTION ── */
+    .pareto-wrap { margin-bottom: 20px; }
+
+    /* ── TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    th {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: left;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .b-red    { background: rgba(239,68,68,.15);   color: #f87171; }
+    .b-amber  { background: rgba(245,158,11,.15);  color: #fbbf24; }
+    .b-green  { background: rgba(34,197,94,.15);   color: #4ade80; }
+    .b-blue   { background: rgba(56,189,248,.15);  color: #7dd3fc; }
+    .b-purple { background: rgba(167,139,250,.15); color: #c4b5fd; }
+    .act-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border-hi);
+      color: var(--accent2);
+      border-radius: var(--r);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .act-btn:hover { background: rgba(56,189,248,.08); border-color: var(--accent2); }
+
+    /* ── CHAT BOX ── */
+    .chat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+    .chat-title {
+      font-family: var(--font-head);
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .chat-desc { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .quick-q { display: flex; gap: 8px; flex-wrap: wrap; }
+    .q-btn {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border-hi);
+      color: var(--accent2);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .q-btn:hover { background: rgba(56,189,248,.1); border-color: var(--accent2); }
+
+    /* ── FOOTER ── */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-left { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+    .footer-left strong { color: var(--accent); }
+    .footer-right { font-size: 11px; color: var(--dim); font-family: var(--font-mono); }
+
+    /* ── LEGEND ── */
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+    .ldot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+    /* ── TOOLTIP for charts ── */
+    .chart-note { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .chart-note strong { color: var(--red); }
+
+    /* ── ANIMATIONS ── */
+    .fade-in { animation: fadeIn .6s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in:nth-child(2) { animation-delay: .08s; }
+    .fade-in:nth-child(3) { animation-delay: .14s; }
+    .fade-in:nth-child(4) { animation-delay: .20s; }
+    .fade-in:nth-child(5) { animation-delay: .26s; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero, .main { padding-left: 20px; padding-right: 20px; }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero-grid { grid-template-columns: 1fr; }
+      th:nth-child(3), td:nth-child(3) { display: none; }
+    }
+    @media (max-width: 560px) {
+      .kpi-strip { grid-template-columns: 1fr 1fr; }
+      .quick-q .q-btn { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HERO HEADER
+═══════════════════════════════════════════════════ -->
+<header class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow">// Midstream Operations &amp; Intelligence</div>
+      <h1 class="hero-title">AI Operational<br><span>Intelligence Platform</span></h1>
+      <p class="hero-sub">Continuous monitoring and decision support across SAP S/4HANA, OSI Pi, SCADA, Gensuite, and Right Angle — unified through an AI reasoning layer.</p>
+      <div class="sys-row">
+        <span class="sys-chip chip-green">SAP S/4HANA</span>
+        <span class="sys-chip chip-blue">OSI Pi</span>
+        <span class="sys-chip chip-amber">SCADA</span>
+        <span class="sys-chip chip-purple">Gensuite</span>
+        <span class="sys-chip chip-teal">Right Angle</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+      <div class="live-badge"><span class="live-dot"></span>All systems live</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right;">
+        <span id="clock">--:--:--</span><br>
+        <span style="color:var(--dim);">Q1 2025 · All facilities</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- KPI STRIP -->
+  <div class="section-label">Key performance indicators — live</div>
+  <div class="kpi-strip">
+    <div class="kpi fade-in">
+      <div class="kpi-src c-amber">SCADA · OSI Pi</div>
+      <div class="kpi-label">Pipeline pressure (psig)</div>
+      <div class="kpi-val" id="kv-press">842</div>
+      <div class="kpi-delta c-amber" id="kd-press">▲ +12 — approaching HH alarm</div>
+    </div>
+    <div class="kpi fade-in">
+      <div class="kpi-src c-blue">OSI Pi</div>
+      <div class="kpi-label">Comp Unit 3 vibration (mm/s)</div>
+      <div class="kpi-val c-red" id="kv-vib">7.8</div>
+      <div class="kpi-delta c-red">▲ Exceeds ISO 10816 limit</div>
+    </div>
+    <div class="kpi fade-in">
+      <div class="kpi-src c-green">SAP S/4HANA</div>
+      <div class="kpi-label">Open critical work orders</div>
+      <div class="kpi-val">6</div>
+      <div class="kpi-delta c-red">3 overdue · $284K backlog cost</div>
+    </div>
+    <div class="kpi fade-in">
+      <div class="kpi-src" style="color:var(--purple);">Gensuite</div>
+      <div class="kpi-label">Open PSM action items</div>
+      <div class="kpi-val c-red">4</div>
+      <div class="kpi-delta c-red">2 past due · MOC-0441 pending</div>
+    </div>
+    <div class="kpi fade-in">
+      <div class="kpi-src" style="color:var(--teal);">Right Angle</div>
+      <div class="kpi-label">Throughput (MMBTU/d)</div>
+      <div class="kpi-val c-green">9.14</div>
+      <div class="kpi-delta c-green">▲ 101.6% of daily target</div>
+    </div>
+  </div>
+
+  <!-- PROCESS CHART + ALERTS -->
+  <div class="section-label">Real-time monitoring &amp; alerts</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Process monitoring — Comp Unit 3 &amp; pipeline</div>
+      <div class="card-sub">OSI Pi · SCADA · 5-min rolling window</div>
+      <div class="legend">
+        <span><span class="ldot" style="background:#60a5fa;"></span>Suction pressure</span>
+        <span><span class="ldot" style="background:#f97316;"></span>Discharge temp</span>
+        <span><span class="ldot" style="background:#ef4444;"></span>Vibration (mm/s)</span>
+      </div>
+      <div style="position:relative;height:210px;"><canvas id="process-chart"></canvas></div>
+      <div class="chart-note"><strong>AI insight:</strong> Vibration spike at 14:20 correlates with lube oil temp rise (+8°C). Pattern matches pre-failure signature from Unit 1 incident (Mar 2024). Estimated time-to-failure: ~6 hrs.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Active alerts — AI prioritised</div>
+      <div class="card-sub">Cross-system · ranked by risk score</div>
+      <div class="alert-list">
+        <div class="alert alert-crit">
+          <div class="alert-head">Comp Unit 3 — imminent failure risk <span class="src-tag st-osipi">OSI Pi</span></div>
+          <div class="alert-body">Vibration 7.8 mm/s · lube oil 94°C · AI risk score 94/100 · ETA to failure ~6 hrs</div>
+        </div>
+        <div class="alert alert-crit">
+          <div class="alert-head">Pipeline Seg 7 — pressure trending HH <span class="src-tag st-scada">SCADA</span></div>
+          <div class="alert-body">842 psig / MAOP 880 · rate: +0.4 psig/min · AI flags potential downstream blockage</div>
+        </div>
+        <div class="alert alert-warn">
+          <div class="alert-head">MOC-0441 — seal change overdue <span class="src-tag st-gen">Gensuite</span></div>
+          <div class="alert-body">Due 12 days ago · linked to WO-4821 · HSE exposure if not closed before work starts</div>
+        </div>
+        <div class="alert alert-warn">
+          <div class="alert-head">3 critical WOs overdue — $284K backlog <span class="src-tag st-sap">SAP</span></div>
+          <div class="alert-body">WO-4821, 4798, 4751 · parts available for 2 of 3 · crew already scheduled</div>
+        </div>
+        <div class="alert alert-info">
+          <div class="alert-head">Pecos Terminal — meter deviation 1.2% <span class="src-tag st-ra">Right Angle</span></div>
+          <div class="alert-body">Custody transfer vs. check meter · $18K/day revenue exposure · contract breach in 48 hrs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARETO CHART -->
+  <div class="section-label">Pareto analysis — unplanned downtime causes</div>
+  <div class="card pareto-wrap">
+    <div class="card-title">80/20 root cause ranking — all facilities · Q1 2025</div>
+    <div class="card-sub">OSI Pi historian + SAP work order data · bars = hours lost · line = cumulative %</div>
+    <div class="legend">
+      <span><span class="ldot" style="background:#f97316;"></span>Hours lost</span>
+      <span><span class="ldot" style="background:#60a5fa;border-radius:50%;"></span>Cumulative %</span>
+    </div>
+    <div style="position:relative;height:240px;"><canvas id="pareto-chart"></canvas></div>
+    <div class="chart-note" style="margin-top:10px;">
+      <strong>AI insight:</strong> Compressor seal failures + corrosion together account for ~50% of all downtime hours. Targeting these two categories alone could recover 130–150 hrs/quarter — equivalent to ~$420K in avoided production loss.
+    </div>
+  </div>
+
+  <!-- AI FEED + DATA LINEAGE -->
+  <div class="section-label">AI decision support &amp; data sources</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">AI decision support feed</div>
+      <div class="card-sub">Cross-system reasoning · updated every 5 min</div>
+      <div class="ai-feed">
+        <div class="ai-msg">
+          <div class="ai-msg-head"><span>Predictive maintenance · Comp Unit 3</span><span>14:32</span></div>
+          <div class="ai-msg-body">OSI Pi vibration + lube oil temp trends match a pre-failure signature (confidence: 91%). SAP confirms no PM in 847 hrs (interval: 750 hrs). Gensuite MOC-0441 is open. Recommend controlled shutdown within 4 hrs, coordinate with WO-4821 crew. Estimated cost avoidance vs. unplanned failure: <strong style="color:var(--green);">$420K</strong>.</div>
+          <button class="ai-btn">Generate shutdown procedure →</button>
+        </div>
+        <div class="ai-msg">
+          <div class="ai-msg-head"><span>Commercial risk · Right Angle + SAP</span><span>14:28</span></div>
+          <div class="ai-msg-body">Pecos Terminal meter deviation of 1.2% on 9.14 MMBTU/d flow represents ~$18K/day revenue leakage. Right Angle last calibration: 127 days ago (contract max: 90 days). SAP WO-4751 scheduled but not started. Non-compliance exposure on 3 shipper contracts if not resolved within 48 hrs.</div>
+          <button class="ai-btn">Explain contractual risk →</button>
+        </div>
+        <div class="ai-msg">
+          <div class="ai-msg-head"><span>OPEX optimisation · SAP + OSI Pi</span><span>14:15</span></div>
+          <div class="ai-msg-body">Compression station energy spend is 23% above plan. OSI Pi shows Unit 2 at 58% load while Unit 4 is at 91% — rebalancing could reduce fuel gas consumption by ~8%. SAP purchase orders show $62K/month chemical over-spend on corrosion inhibitor vs. Right Angle flow data.</div>
+          <button class="ai-btn">Optimise compression load →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Data lineage — what each source contributes</div>
+      <div class="card-sub">AI cross-correlates all five systems in every recommendation</div>
+      <div class="lineage-list">
+        <div class="lineage-item li-green">
+          <div class="lineage-name" style="color:#4ade80;">SAP S/4HANA · ERP layer</div>
+          <div style="color:var(--muted);">Work orders · PM schedules · cost centres · purchase history · equipment master · BOM</div>
+        </div>
+        <div class="lineage-item li-blue">
+          <div class="lineage-name" style="color:#60a5fa;">OSI Pi · process historian</div>
+          <div style="color:var(--muted);">Continuous process data · vibration · temps · pressures · flow rates · anomaly detection</div>
+        </div>
+        <div class="lineage-item li-amber">
+          <div class="lineage-name" style="color:#fbbf24;">SCADA · control system</div>
+          <div style="color:var(--muted);">Real-time alarms · valve positions · set-points · trip history · control logic states</div>
+        </div>
+        <div class="lineage-item li-purple">
+          <div class="lineage-name" style="color:#c4b5fd;">Gensuite · EHS &amp; compliance</div>
+          <div style="color:var(--muted);">Incidents · MOC · PSM actions · permit-to-work · audit findings · compliance status</div>
+        </div>
+        <div class="lineage-item li-teal">
+          <div class="lineage-name" style="color:#5eead4;">Right Angle · commercial</div>
+          <div style="color:var(--muted);">Nominations · allocations · custody metering · shipper contracts · imbalances</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM CHARTS -->
+  <div class="section-label">Operational breakdown</div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Maintenance backlog</div>
+      <div class="card-sub">SAP S/4HANA · WOs by priority</div>
+      <div class="legend">
+        <span><span class="ldot" style="background:#ef4444;"></span>Overdue</span>
+        <span><span class="ldot" style="background:#60a5fa;"></span>On track</span>
+      </div>
+      <div style="position:relative;height:160px;"><canvas id="wo-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Safety &amp; compliance</div>
+      <div class="card-sub">Gensuite · open items by type</div>
+      <div style="position:relative;height:180px;"><canvas id="hse-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Commercial performance</div>
+      <div class="card-sub">Right Angle · nominations vs actuals</div>
+      <div class="legend">
+        <span><span class="ldot" style="background:#6b7280;"></span>Nominated</span>
+        <span><span class="ldot" style="background:#22c55e;"></span>Actual</span>
+      </div>
+      <div style="position:relative;height:160px;"><canvas id="comm-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- OEE CHART -->
+  <div class="section-label">Equipment reliability — overall equipment effectiveness</div>
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title">OEE % by asset — all facilities</div>
+    <div class="card-sub">OSI Pi + SAP · color-coded: green ≥90% · blue ≥80% · amber ≥70% · red &lt;70%</div>
+    <div style="position:relative;height:200px;"><canvas id="oee-chart"></canvas></div>
+  </div>
+
+  <!-- RECOMMENDATION TABLE -->
+  <div class="section-label">AI recommendations — ranked by risk &amp; impact</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:80px;">Source</th>
+          <th style="width:130px;">Asset / area</th>
+          <th>AI recommendation</th>
+          <th style="width:80px;">Risk</th>
+          <th style="width:100px;">Cost impact</th>
+          <th style="width:80px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="rec-row-1">
+          <td><span class="badge b-blue">OSI Pi</span></td>
+          <td>Comp Unit 3</td>
+          <td>Controlled shutdown in 4 hrs — vibration + lube oil predict seal failure</td>
+          <td><span class="badge b-red">Critical</span></td>
+          <td><span style="color:var(--green);">-$420K avoid</span></td>
+          <td><button class="act-btn" id="rec-btn-1" onclick="showRec(1,this)">Ask AI →</button></td>
+        </tr>
+        <tr id="rec-row-2">
+          <td><span class="badge b-amber">SCADA</span></td>
+          <td>Pipeline Seg 7</td>
+          <td>Dispatch pig run — pressure approaching MAOP, blockage suspected</td>
+          <td><span class="badge b-red">High</span></td>
+          <td><span style="color:var(--red);">-$180K exp.</span></td>
+          <td><button class="act-btn" id="rec-btn-2" onclick="showRec(2,this)">Ask AI →</button></td>
+        </tr>
+        <tr id="rec-row-3">
+          <td><span class="badge b-purple">Gensuite</span></td>
+          <td>Comp Stn A</td>
+          <td>Close MOC-0441 before WO-4821 proceeds — PSM requirement, 12 days overdue</td>
+          <td><span class="badge b-amber">Medium</span></td>
+          <td><span style="color:var(--amber);">Compliance</span></td>
+          <td><button class="act-btn" id="rec-btn-3" onclick="showRec(3,this)">Ask AI →</button></td>
+        </tr>
+        <tr id="rec-row-4">
+          <td><span class="badge" style="background:rgba(94,234,212,.12);color:#5eead4;">R. Angle</span></td>
+          <td>Pecos Terminal</td>
+          <td>Immediate meter calibration — contract compliance breach in 48 hrs</td>
+          <td><span class="badge b-amber">Medium</span></td>
+          <td><span style="color:var(--red);">-$18K/day</span></td>
+          <td><button class="act-btn" id="rec-btn-4" onclick="showRec(4,this)">Ask AI →</button></td>
+        </tr>
+        <tr id="rec-row-5">
+          <td><span class="badge b-green">SAP</span></td>
+          <td>All stations</td>
+          <td>Rebalance compression load — Units 2 &amp; 4 imbalanced, 8% fuel savings available</td>
+          <td><span class="badge b-blue">Low</span></td>
+          <td><span style="color:var(--green);">+$31K/mo</span></td>
+          <td><button class="act-btn" id="rec-btn-5" onclick="showRec(5,this)">Ask AI →</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- REC DETAIL PANEL — injected below table on click -->
+  <div id="rec-detail-panel" style="display:none; margin-bottom:28px;"></div>
+
+  <!-- WORK ORDER TABLE -->
+  <div class="section-label">Active work orders &amp; incidents</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:80px;">WO #</th>
+          <th style="width:160px;">Facility</th>
+          <th>Description</th>
+          <th style="width:90px;">Priority</th>
+          <th style="width:100px;">Status</th>
+          <th style="width:70px;">Est. hrs</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;">WO-4821</td>
+          <td>Midland Comp. Stn</td>
+          <td>Compressor Unit 3 — seal failure, gas leak confirmed</td>
+          <td><span class="badge b-red">Critical</span></td>
+          <td><span class="badge b-red">In progress</span></td>
+          <td>12</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;">WO-4798</td>
+          <td>Permian Hub</td>
+          <td>Amine unit — heat exchanger fouling, efficiency down 14%</td>
+          <td><span class="badge b-amber">High</span></td>
+          <td><span class="badge b-amber">Scheduled</span></td>
+          <td>8</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;">WO-4776</td>
+          <td>Pipeline Seg. 7</td>
+          <td>Corrosion inhibitor injection pump failure — segment unprotected</td>
+          <td><span class="badge b-amber">High</span></td>
+          <td><span class="badge b-green">Resolved</span></td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;">WO-4751</td>
+          <td>Pecos Terminal</td>
+          <td>Meter calibration drift — custody transfer non-compliant</td>
+          <td><span class="badge b-amber">Medium</span></td>
+          <td><span class="badge b-amber">Scheduled</span></td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:11px;">WO-4739</td>
+          <td>Midland Comp. Stn</td>
+          <td>PLC firmware update — DCS control system upgrade</td>
+          <td><span class="badge b-green">Low</span></td>
+          <td><span class="badge b-green">Resolved</span></td>
+          <td>6</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- QUERY BOX -->
+  <div class="chat-box">
+    <div class="chat-title">AI cross-system query — select a topic</div>
+    <div class="chat-desc">Each button synthesises live data from SAP · OSI Pi · SCADA · Gensuite · Right Angle into a structured AI response below.</div>
+    <div class="quick-q">
+      <button class="q-btn" id="qb-risk"     onclick="showQuery('risk')">Overall risk score today →</button>
+      <button class="q-btn" id="qb-rca"      onclick="showQuery('rca')">Root cause analysis — Unit 3 →</button>
+      <button class="q-btn" id="qb-revenue"  onclick="showQuery('revenue')">Revenue efficiency analysis →</button>
+      <button class="q-btn" id="qb-maint"    onclick="showQuery('maint')">Optimal 30-day maintenance plan →</button>
+      <button class="q-btn" id="qb-comp"     onclick="showQuery('comp')">Compression load optimisation →</button>
+      <button class="q-btn" id="qb-corr"     onclick="showQuery('corr')">Corrosion inhibitor spend audit →</button>
+    </div>
+  </div>
+
+  <!-- AI RESPONSE PANEL -->
+  <div id="ai-response-panel" style="display:none; margin-bottom:40px; animation: fadeIn .35s ease both;">
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;" id="ai-resp-label">AI response</div>
+    <div id="ai-resp-inner"></div>
+  </div>
+
+</main>
+
+<style>
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .q-btn.q-active { background: rgba(56,189,248,.12); border-color: var(--accent2); color: #fff; }
+
+  /* response layout helpers */
+  .resp-grid-2 { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:14px; margin-bottom:16px; }
+  .resp-grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  .resp-grid-4 { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  .resp-card   { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:16px 18px; }
+  .resp-card-title { font-family:var(--font-head); font-size:13px; font-weight:600; color:#fff; margin-bottom:6px; }
+  .resp-card-sub   { font-size:11px; color:var(--muted); margin-bottom:10px; }
+  .resp-kpi  { background:var(--surface2); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px 16px; }
+  .resp-kpi-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
+  .resp-kpi-val   { font-family:var(--font-mono); font-size:22px; font-weight:500; line-height:1.1; }
+  .resp-kpi-note  { font-family:var(--font-mono); font-size:10px; margin-top:4px; }
+  .risk-row  { display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .risk-row:last-child { border-bottom:none; }
+  .risk-bar-wrap { flex:1; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+  .risk-bar-fill { height:100%; border-radius:3px; transition:width 1s ease; }
+  .risk-label { min-width:160px; color:var(--text); }
+  .risk-score { font-family:var(--font-mono); font-size:11px; min-width:36px; text-align:right; }
+  .step-list  { display:flex; flex-direction:column; gap:8px; }
+  .step-item  { display:flex; gap:12px; align-items:flex-start; padding:10px 12px; background:var(--surface2); border-radius:var(--r); border:1px solid var(--border); }
+  .step-num   { font-family:var(--font-mono); font-size:13px; font-weight:500; min-width:22px; line-height:1.4; }
+  .step-body  { font-size:12px; color:var(--text); line-height:1.6; }
+  .step-meta  { font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-top:3px; }
+  .badge-sm   { font-family:var(--font-mono); font-size:9px; font-weight:500; padding:2px 8px; border-radius:3px; display:inline-block; }
+  .b-red-sm   { background:rgba(239,68,68,.15);  color:#f87171; }
+  .b-amb-sm   { background:rgba(245,158,11,.15); color:#fbbf24; }
+  .b-grn-sm   { background:rgba(34,197,94,.15);  color:#4ade80; }
+  .b-blu-sm   { background:rgba(56,189,248,.15); color:#7dd3fc; }
+  .b-pur-sm   { background:rgba(167,139,250,.15);color:#c4b5fd; }
+  .finding-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .finding-row:last-child { border-bottom:none; }
+  .finding-label { color:var(--text); flex:1; }
+  .finding-val   { font-family:var(--font-mono); font-size:11px; text-align:right; min-width:80px; }
+  .week-row  { display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--border); }
+  .week-row:last-child { border-bottom:none; }
+  .week-badge { font-family:var(--font-mono); font-size:10px; font-weight:500; padding:3px 9px; border-radius:3px; background:rgba(56,189,248,.1); color:var(--accent2); border:1px solid rgba(56,189,248,.2); white-space:nowrap; }
+  .week-body  { font-size:12px; color:var(--text); line-height:1.6; flex:1; }
+  .week-meta  { font-family:var(--font-mono); font-size:10px; color:var(--muted); margin-top:2px; }
+  .unit-row   { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+  .unit-row:last-child { border-bottom:none; }
+  .unit-name  { min-width:100px; color:var(--text); }
+  .unit-load-wrap { flex:1; height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+  .unit-load-fill { height:100%; border-radius:3px; }
+  .unit-pct   { font-family:var(--font-mono); font-size:11px; min-width:40px; text-align:right; }
+  .unit-action{ font-size:11px; color:var(--muted); min-width:120px; text-align:right; }
+  .src-cite   { font-family:var(--font-mono); font-size:9px; padding:2px 7px; border-radius:3px; display:inline-block; }
+  .sc-sap  { background:rgba(74,222,128,.1);  color:#4ade80; }
+  .sc-pi   { background:rgba(96,165,250,.1);  color:#60a5fa; }
+  .sc-sca  { background:rgba(251,191,36,.1);  color:#fbbf24; }
+  .sc-gen  { background:rgba(196,181,253,.1); color:#c4b5fd; }
+  .sc-ra   { background:rgba(94,234,212,.1);  color:#5eead4; }
+
+  @media(max-width:900px){
+    .resp-grid-2,.resp-grid-3,.resp-grid-4 { grid-template-columns:1fr; }
+  }
+</style>
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-left">
+    <strong>AI Operational Intelligence Platform</strong> · Midstream O&amp;G · All rights reserved
+  </div>
+  <div class="footer-right">
+    Built with SAP S/4HANA · OSI Pi · SCADA · Gensuite · Right Angle · AI reasoning layer
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
+<script>
+  /* ── CLOCK ── */
+  function tick() {
+    const now = new Date();
+    const el = document.getElementById('clock');
+    if (el) el.textContent = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ── LIVE KPI SIMULATION ── */
+  let pressVal = 842, vibVal = 7.8;
+  setInterval(() => {
+    pressVal = Math.min(872, pressVal + (Math.random() * 1.4 - 0.3));
+    const pEl = document.getElementById('kv-press');
+    const dEl = document.getElementById('kd-press');
+    if (pEl) pEl.textContent = Math.round(pressVal);
+    if (dEl) {
+      const diff = Math.round(pressVal - 830);
+      dEl.textContent = pressVal > 860 ? '▲ CRITICAL — approaching MAOP' : '▲ +' + diff + ' — approaching HH alarm';
+      dEl.className = 'kpi-delta ' + (pressVal > 860 ? 'c-red' : 'c-amber');
+    }
+    vibVal = Math.min(9.8, vibVal + (Math.random() * 0.18 - 0.03));
+    const vEl = document.getElementById('kv-vib');
+    if (vEl) vEl.textContent = vibVal.toFixed(1);
+  }, 3000);
+
+  /* ── CHART DEFAULTS ── */
+  Chart.defaults.color = '#6b7280';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+
+  /* ── PROCESS CHART ── */
+  new Chart(document.getElementById('process-chart'), {
+    type: 'line',
+    data: {
+      labels: ['14:00','14:05','14:10','14:15','14:20','14:25','14:30','14:32'],
+      datasets: [
+        { label:'Suction pressure', data:[618,621,619,623,628,625,631,634], borderColor:'#60a5fa', backgroundColor:'rgba(96,165,250,0.06)', tension:0.4, pointRadius:2, fill:true, yAxisID:'y' },
+        { label:'Discharge temp (°C)', data:[88,89,89,91,94,96,98,99], borderColor:'#f97316', tension:0.4, pointRadius:2, yAxisID:'y2' },
+        { label:'Vibration (mm/s)', data:[3.1,3.4,3.8,4.2,6.1,6.9,7.4,7.8], borderColor:'#ef4444', tension:0.3, pointRadius:3, borderWidth:2.5, yAxisID:'y3' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{font:{size:10}}, grid:{display:false} },
+        y:{ display:false },
+        y2:{ display:false },
+        y3:{ display:false }
+      }
+    }
+  });
+
+  /* ── PARETO CHART ── */
+  const paretoVals = [98,74,52,41,33,22,15,12];
+  const total = paretoVals.reduce((a,b)=>a+b,0);
+  let sum = 0;
+  const cumPct = paretoVals.map(v => { sum += v; return Math.round(sum/total*100); });
+
+  new Chart(document.getElementById('pareto-chart'), {
+    data: {
+      labels: ['Comp. seal failure','Corrosion','Instrument fault','Power outage','Valve leak','Pig receiver','Weather','Other'],
+      datasets: [
+        { type:'bar', label:'Hours lost', data:paretoVals, backgroundColor:'#f97316', yAxisID:'y', order:2 },
+        { type:'line', label:'Cumulative %', data:cumPct, borderColor:'#60a5fa', backgroundColor:'#60a5fa', pointRadius:4, pointBackgroundColor:'#60a5fa', yAxisID:'y2', order:1, tension:0.3 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ctx.dataset.type==='line' ? ' Cum: '+ctx.raw+'%' : ' Hours: '+ctx.raw } } },
+      scales:{
+        x:{ ticks:{font:{size:10}}, grid:{display:false} },
+        y:{ ticks:{font:{size:10}}, title:{display:true,text:'Hours lost',font:{size:10}} },
+        y2:{ position:'right', min:0, max:100, ticks:{font:{size:10},callback:v=>v+'%'}, grid:{display:false} }
+      }
+    }
+  });
+
+  /* ── WO CHART ── */
+  new Chart(document.getElementById('wo-chart'), {
+    type:'bar',
+    data:{
+      labels:['Critical','High','Medium','Low'],
+      datasets:[
+        { label:'Overdue', data:[2,1,3,5], backgroundColor:'#ef4444', stack:'a' },
+        { label:'On time', data:[1,4,8,12], backgroundColor:'#60a5fa', stack:'a' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{font:{size:10}}, grid:{display:false} },
+        y:{ ticks:{font:{size:10}} }
+      }
+    }
+  });
+
+  /* ── HSE DOUGHNUT ── */
+  new Chart(document.getElementById('hse-chart'), {
+    type:'doughnut',
+    data:{
+      labels:['PSM actions','MOC open','Audit findings','Near miss','Incident'],
+      datasets:[{ data:[4,2,6,3,1], backgroundColor:['#a78bfa','#f97316','#f59e0b','#60a5fa','#ef4444'], borderWidth:0, hoverBorderWidth:2, hoverBorderColor:'rgba(255,255,255,0.2)' }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'62%',
+      plugins:{ legend:{ position:'right', labels:{ font:{size:10}, boxWidth:10, padding:8, color:'#9ca3af' } } }
+    }
+  });
+
+  /* ── COMMERCIAL CHART ── */
+  new Chart(document.getElementById('comm-chart'), {
+    type:'bar',
+    data:{
+      labels:['Shipper A','Shipper B','Shipper C','Spot'],
+      datasets:[
+        { label:'Nominated', data:[4.2,2.8,1.6,0.8], backgroundColor:'rgba(107,114,128,0.5)', stack:'a' },
+        { label:'Actual', data:[4.4,2.7,1.7,0.6], backgroundColor:'#22c55e', stack:'b' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ ticks:{font:{size:10}}, grid:{display:false} },
+        y:{ ticks:{font:{size:10},callback:v=>v+'M'} }
+      }
+    }
+  });
+
+  /* ── OEE CHART ── */
+  const oeeLabels = ['Comp Unit 1','Comp Unit 2','Comp Unit 3','NGL Frac.','Amine Unit','Dehy Unit','Pipeline Seg 7'];
+  const oeeVals = [88,92,67,84,79,91,96];
+  const oeeColors = oeeVals.map(v => v>=90?'#22c55e':v>=80?'#60a5fa':v>=70?'#f59e0b':'#ef4444');
+
+  new Chart(document.getElementById('oee-chart'), {
+    type:'bar',
+    data:{
+      labels:oeeLabels,
+      datasets:[{ data:oeeVals, backgroundColor:oeeColors }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:ctx=>' OEE: '+ctx.raw+'%' } } },
+      scales:{
+        x:{ min:50, max:100, ticks:{font:{size:10},callback:v=>v+'%'} },
+        y:{ ticks:{font:{size:10}}, grid:{display:false} }
+      }
+    }
+  });
+
+  /* ══════════════════════════════════════════════
+     RECOMMENDATION TABLE — ASK AI BUTTONS
+  ══════════════════════════════════════════════ */
+
+  const REC_DATA = {
+
+    1: {
+      title: 'Comp Unit 3 — controlled shutdown · OSI Pi + SAP + Gensuite',
+      risk: 'Critical', riskColor: '#ef4444',
+      cost: '-$420K avoided', costColor: '#22c55e',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:14px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current vibration</div><div class="resp-kpi-val" style="color:#ef4444;">7.8 mm/s</div><div class="resp-kpi-note" style="color:#ef4444;">ISO 10816 limit 4.5 mm/s</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Lube oil temperature</div><div class="resp-kpi-val" style="color:#ef4444;">94 °C</div><div class="resp-kpi-note" style="color:#f59e0b;">Normal: 70–82 °C</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">PM overdue by</div><div class="resp-kpi-val" style="color:#f59e0b;">97 hrs</div><div class="resp-kpi-note" style="color:#f59e0b;">Interval: 750 hrs</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">AI failure probability</div><div class="resp-kpi-val" style="color:#ef4444;">91%</div><div class="resp-kpi-note" style="color:#ef4444;">Within 6-hour window</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Step-by-step shutdown procedure</div>
+            <div class="resp-card-sub">Sequence validated against SAP SOPs · estimated 12–16 hrs total</div>
+            <div class="step-list">
+              <div class="step-item"><div class="step-num" style="color:#ef4444;">01</div><div><div class="step-body"><strong style="color:#fff;">Notify control room and field supervisor immediately.</strong> Confirm Gensuite MOC-0441 is closed and PTW-2291 is active before any field activity begins. This is a PSM-mandatory prerequisite.</div><div class="step-meta">0–30 min &nbsp;·&nbsp; <span class="src-cite sc-gen">Gensuite</span> MOC-0441 <span class="badge-sm b-red-sm">Prerequisite</span></div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f97316;">02</div><div><div class="step-body"><strong style="color:#fff;">Ramp up Units 1, 2 and 4</strong> to compensate for Unit 3 load. SCADA set-points: Unit 2 suction from 58% → 78%, Unit 4 from 91% → 82% (within BEP range). Verify throughput holds above 8.9 MMBTU/d.</div><div class="step-meta">30–60 min &nbsp;·&nbsp; <span class="src-cite sc-sca">SCADA</span> load transfer</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f59e0b;">03</div><div><div class="step-body"><strong style="color:#fff;">Isolate Unit 3 suction and discharge valves.</strong> Vent to flare per SOP-COMP-007. Confirm zero energy state — lock out / tag out per SAP WO-4821 LOTO checklist.</div><div class="step-meta">60–90 min &nbsp;·&nbsp; <span class="src-cite sc-sap">SAP</span> WO-4821 LOTO</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">04</div><div><div class="step-body"><strong style="color:#fff;">Remove and inspect mechanical seal assembly.</strong> Replace seal faces, O-rings and lube oil cooler bypass valve (root cause). Parts confirmed in Midland warehouse — seal kit #SK-3841, bypass valve #BV-0221.</div><div class="step-meta">2–10 hrs &nbsp;·&nbsp; <span class="src-cite sc-sap">SAP</span> parts confirmed in stock</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#22c55e;">05</div><div><div class="step-body"><strong style="color:#fff;">Recommission and return to service.</strong> Slow-roll test, vibration baseline check (target: &lt;2.5 mm/s), lube oil flush. Update OSI Pi baseline tag CU3.VIB.X. Close WO-4821 in SAP and record as-found data.</div><div class="step-meta">10–16 hrs &nbsp;·&nbsp; <span class="src-cite sc-pi">OSI Pi</span> baseline reset</div></div></div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Cost avoidance breakdown</div>
+            <div class="resp-card-sub">Planned shutdown vs. unplanned catastrophic failure</div>
+            <div class="finding-row"><span class="finding-label">Seal kit &amp; labour (planned)</span><span class="finding-val" style="color:#22c55e;">$28K</span></div>
+            <div class="finding-row"><span class="finding-label">Production deferral (12 hrs × $9.14M/d)</span><span class="finding-val" style="color:#f59e0b;">$4.6K</span></div>
+            <div class="finding-row"><span class="finding-label" style="font-weight:600;color:#fff;">Total planned cost</span><span class="finding-val" style="color:#22c55e;font-size:13px;">$32.6K</span></div>
+            <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+            <div class="finding-row"><span class="finding-label">Rotor replacement (if seal fails)</span><span class="finding-val" style="color:#ef4444;">$180K</span></div>
+            <div class="finding-row"><span class="finding-label">Unplanned downtime (72–96 hrs)</span><span class="finding-val" style="color:#ef4444;">$92K</span></div>
+            <div class="finding-row"><span class="finding-label">Pipeline pressure upset / secondary damage</span><span class="finding-val" style="color:#ef4444;">$90K est.</span></div>
+            <div class="finding-row"><span class="finding-label">Incident investigation &amp; reporting</span><span class="finding-val" style="color:#ef4444;">$60K</span></div>
+            <div class="finding-row" style="border-top:1px solid var(--border);"><span class="finding-label" style="font-weight:600;color:#fff;">Total unplanned cost</span><span class="finding-val" style="color:#ef4444;font-size:13px;">$422K+</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:var(--r);font-size:12px;color:#4ade80;">
+              Net cost avoidance: <strong>$389K</strong> by acting now vs. waiting for failure.
+            </div>
+          </div>
+        </div>`
+    },
+
+    2: {
+      title: 'Pipeline Seg 7 — pig run dispatch &amp; pressure management · SCADA + OSI Pi',
+      risk: 'High', riskColor: '#ef4444',
+      cost: '-$180K exposure', costColor: '#ef4444',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:14px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current pressure</div><div class="resp-kpi-val" style="color:#f59e0b;" id="rec-press-live">842 psig</div><div class="resp-kpi-note" style="color:#f59e0b;">MAOP: 880 psig</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Pressure rate of rise</div><div class="resp-kpi-val" style="color:#ef4444;">+0.4 psig/min</div><div class="resp-kpi-note" style="color:#ef4444;">Time to MAOP: ~95 min</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Flow velocity drop</div><div class="resp-kpi-val" style="color:#f59e0b;">-6%</div><div class="resp-kpi-note" style="color:#f59e0b;">Over last 2 hrs — blockage indicator</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">MAOP margin remaining</div><div class="resp-kpi-val" style="color:#f59e0b;">4.3%</div><div class="resp-kpi-note" style="color:#ef4444;">Minimum safe margin: 10%</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Immediate actions — next 2 hours</div>
+            <div class="resp-card-sub">SCADA control room + field operations</div>
+            <div class="step-list">
+              <div class="step-item"><div class="step-num" style="color:#ef4444;">NOW</div><div><div class="step-body"><strong style="color:#fff;">Throttle Seg 7 inlet flow by 8%</strong> via SCADA valve CV-0741. This reduces pressure rate of rise and buys approximately 3 hours of safe operating margin while investigation proceeds. Notify SCADA operator to monitor every 5 minutes.</div><div class="step-meta"><span class="src-cite sc-sca">SCADA</span> valve CV-0741 &nbsp;·&nbsp; <span class="badge-sm b-red-sm">Do immediately</span></div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f97316;">30 min</div><div><div class="step-body"><strong style="color:#fff;">Mobilise pig launcher crew</strong> at Midland inlet. Deploy 4-inch cleaning pig to clear suspected partial blockage. Pig receiver at Pecos Terminal is already staffed. Estimated pig run transit time: 4.2 hrs at current flow velocity.</div><div class="step-meta">Crew on-site · <span class="src-cite sc-sap">SAP</span> WO-4788 (new) · est. 6 hrs total</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f59e0b;">2 hrs</div><div><div class="step-body"><strong style="color:#fff;">Check Pecos valve cluster</strong> for partial closure — OSI Pi flow data shows the pressure drop profile is consistent with a valve not fully open at the downstream cluster (CV-0812 or CV-0814). Inspect both manually.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> pressure differential analysis</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#22c55e;">Post-pig</div><div><div class="step-body"><strong style="color:#fff;">Return inlet flow to 100%</strong> once pig is received at Pecos and pressure confirms normal. Review SCADA alarm set-points — the HH alarm at 860 psig is too close to MAOP; recommend reducing to 845 psig to provide earlier warning.</div><div class="step-meta"><span class="src-cite sc-sca">SCADA</span> alarm configuration update</div></div></div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Blockage diagnosis — AI analysis</div>
+            <div class="resp-card-sub">OSI Pi pressure differential · last 6 hrs</div>
+            <div class="finding-row"><span class="finding-label">Pressure delta (inlet vs. outlet)</span><span class="finding-val" style="color:#ef4444;">+38 psig above normal</span></div>
+            <div class="finding-row"><span class="finding-label">Flow velocity (Midland inlet)</span><span class="finding-val" style="color:#f59e0b;">12.4 ft/s → 11.7 ft/s</span></div>
+            <div class="finding-row"><span class="finding-label">Flow velocity (Pecos outlet)</span><span class="finding-val" style="color:#ef4444;">12.4 ft/s → 10.9 ft/s</span></div>
+            <div class="finding-row"><span class="finding-label">AI diagnosis</span><span class="finding-val" style="color:#f59e0b;">Partial blockage — 35–45%</span></div>
+            <div class="finding-row"><span class="finding-label">Likely location</span><span class="finding-val" style="color:#f59e0b;">km 47–52, near Pecos cluster</span></div>
+            <div class="finding-row"><span class="finding-label">Probable cause</span><span class="finding-val" style="color:#60a5fa;">Hydrate or wax deposit</span></div>
+            <div class="finding-row"><span class="finding-label">Last pig run</span><span class="finding-val" style="color:#ef4444;">127 days ago (max: 90)</span></div>
+            <div class="finding-row"><span class="finding-label">Financial exposure if MAOP breach</span><span class="finding-val" style="color:#ef4444;">$180K+ regulatory + repair</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);font-size:12px;color:#f87171;">
+              If pressure reaches MAOP and ESD trips, estimated 18–24 hr full-line shutdown: $76K lost throughput + mandatory PHMSA notification.
+            </div>
+          </div>
+        </div>`
+    },
+
+    3: {
+      title: 'MOC-0441 closure — PSM compliance · Gensuite + SAP',
+      risk: 'Medium', riskColor: '#f59e0b',
+      cost: 'Compliance risk', costColor: '#f59e0b',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:14px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">MOC status</div><div class="resp-kpi-val" style="color:#ef4444;">OVERDUE</div><div class="resp-kpi-note" style="color:#ef4444;">12 days past due date</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Linked work order</div><div class="resp-kpi-val" style="color:#f59e0b;">WO-4821</div><div class="resp-kpi-note" style="color:#f59e0b;">Cannot proceed without MOC close</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Regulatory standard</div><div class="resp-kpi-val" style="color:#60a5fa;">OSHA PSM</div><div class="resp-kpi-note" style="color:#60a5fa;">29 CFR 1910.119</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Penalty exposure</div><div class="resp-kpi-val" style="color:#ef4444;">$15K+</div><div class="resp-kpi-note" style="color:#ef4444;">Per violation per day</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">MOC-0441 closure checklist</div>
+            <div class="resp-card-sub">Gensuite workflow · all steps required before WO-4821 field work begins</div>
+            <div class="step-list">
+              <div class="step-item"><div class="step-num" style="color:#ef4444;">01</div><div><div class="step-body"><strong style="color:#fff;">Process hazard review sign-off.</strong> Compressor seal change on a unit with active gas leak risk requires hazard review. Assign to process safety lead — estimated 2 hrs. Document in Gensuite MOC-0441 Section 4.</div><div class="step-meta"><span class="src-cite sc-gen">Gensuite</span> MOC-0441 §4 · Responsible: PSM Lead</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f97316;">02</div><div><div class="step-body"><strong style="color:#fff;">Update P&amp;ID redlines.</strong> The bypass valve replacement (lube oil cooler circuit) changes the as-built configuration. Engineering must mark up drawing P&amp;ID-COMP-014 and stamp as temporary change pending formal revision.</div><div class="step-meta"><span class="src-cite sc-sap">SAP</span> DMS drawing P&amp;ID-COMP-014 · Engineering team</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f59e0b;">03</div><div><div class="step-body"><strong style="color:#fff;">Operator training verification.</strong> Confirm the two technicians assigned to WO-4821 have completed Seal Change SOP-COMP-007 training. Check SAP HR training records — if not current, 30-min field briefing is acceptable per site procedure.</div><div class="step-meta"><span class="src-cite sc-sap">SAP</span> HR training records · Ops Supervisor sign-off</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">04</div><div><div class="step-body"><strong style="color:#fff;">Issue permit-to-work PTW-2291.</strong> Hot work and confined space permits required. Gas test within 1 hour of work commencement. Gensuite PTW linked to MOC-0441 — approve and activate simultaneously.</div><div class="step-meta"><span class="src-cite sc-gen">Gensuite</span> PTW-2291 · Area Authority sign-off</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#22c55e;">05</div><div><div class="step-body"><strong style="color:#fff;">Post-startup verification.</strong> After Unit 3 returns to service, complete MOC-0441 post-startup checklist in Gensuite within 72 hrs. Confirm P&amp;ID formal revision is submitted to engineering queue within 30 days.</div><div class="step-meta"><span class="src-cite sc-gen">Gensuite</span> MOC closure · 72-hr deadline post-restart</div></div></div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Regulatory exposure if MOC skipped</div>
+            <div class="resp-card-sub">OSHA PSM 29 CFR 1910.119 · PHMSA 49 CFR 192</div>
+            <div class="finding-row"><span class="finding-label">OSHA PSM violation (per day)</span><span class="finding-val" style="color:#ef4444;">Up to $15,625</span></div>
+            <div class="finding-row"><span class="finding-label">PHMSA pipeline safety (per incident)</span><span class="finding-val" style="color:#ef4444;">Up to $257,664</span></div>
+            <div class="finding-row"><span class="finding-label">Insurance claim impact</span><span class="finding-val" style="color:#f59e0b;">Policy may be voided</span></div>
+            <div class="finding-row"><span class="finding-label">Current days overdue</span><span class="finding-val" style="color:#ef4444;">12 days</span></div>
+            <div class="finding-row"><span class="finding-label">Estimated penalty accrued</span><span class="finding-val" style="color:#ef4444;">$187K (if cited)</span></div>
+            <div class="finding-row"><span class="finding-label">Time to close MOC-0441</span><span class="finding-val" style="color:#22c55e;">~4 hrs with focus</span></div>
+            <div class="finding-row"><span class="finding-label">WO-4821 can start after MOC close</span><span class="finding-val" style="color:#22c55e;">Yes — same shift</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.2);border-radius:var(--r);font-size:12px;color:#c4b5fd;">
+              PSM violations frequently result in multi-year audit programs. Close MOC-0441 today — the 4-hour effort eliminates both the regulatory exposure and unblocks the critical Unit 3 repair.
+            </div>
+          </div>
+        </div>`
+    },
+
+    4: {
+      title: 'Pecos Terminal — custody meter recalibration · Right Angle + SAP',
+      risk: 'Medium', riskColor: '#f59e0b',
+      cost: '-$18K/day revenue leakage', costColor: '#ef4444',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:14px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Meter deviation</div><div class="resp-kpi-val" style="color:#ef4444;">1.2%</div><div class="resp-kpi-note" style="color:#ef4444;">Primary vs. check meter</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Daily revenue leakage</div><div class="resp-kpi-val" style="color:#ef4444;">$18K/day</div><div class="resp-kpi-note" style="color:#ef4444;">At 9.14 MMBTU/d flow</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Days since calibration</div><div class="resp-kpi-val" style="color:#ef4444;">127 days</div><div class="resp-kpi-note" style="color:#ef4444;">Contract max: 90 days</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Contract breach deadline</div><div class="resp-kpi-val" style="color:#f59e0b;">48 hrs</div><div class="resp-kpi-note" style="color:#f59e0b;">Shipper A MSA clause 14.3</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Calibration procedure — WO-4751</div>
+            <div class="resp-card-sub">Right Angle metering standard · AGA-9 ultrasonic meter protocol</div>
+            <div class="step-list">
+              <div class="step-item"><div class="step-num" style="color:#f97316;">01</div><div><div class="step-body"><strong style="color:#fff;">Notify all three shippers</strong> (A, B, C) of scheduled meter maintenance via Right Angle nomination portal before work commences. Clause 14.3 requires minimum 24-hr notice. Send notification immediately.</div><div class="step-meta"><span class="src-cite sc-ra">Right Angle</span> nomination portal · 24-hr notice required</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#f59e0b;">02</div><div><div class="step-body"><strong style="color:#fff;">Switch custody measurement to check meter</strong> (secondary ultrasonic, RA-CM-002) while primary is offline for calibration. Confirm check meter was last calibrated 34 days ago — within tolerance.</div><div class="step-meta"><span class="src-cite sc-ra">Right Angle</span> RA-CM-002 · last cal: 34 days ago ✓</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">03</div><div><div class="step-body"><strong style="color:#fff;">In-situ calibration using master meter.</strong> Connect portable master meter (AGA-9 class) in series with RA-CM-001. Run calibration at three flow points: 20%, 60%, and 100% of operating capacity. Adjust meter factor in FLOW-X computer.</div><div class="step-meta">Est. 3 hrs · SAP WO-4751 · certified metering technician</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#22c55e;">04</div><div><div class="step-body"><strong style="color:#fff;">Issue calibration certificate and notify shippers.</strong> As-found deviation of 1.2% must be reported to all shippers with retroactive volume correction calculation going back to last known good calibration date. Right Angle will auto-calculate imbalance adjustments.</div><div class="step-meta"><span class="src-cite sc-ra">Right Angle</span> imbalance module · <span class="src-cite sc-sap">SAP</span> close WO-4751</div></div></div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Financial &amp; contractual exposure</div>
+            <div class="resp-card-sub">Right Angle revenue data · shipper MSA terms</div>
+            <div class="finding-row"><span class="finding-label">Revenue leakage rate</span><span class="finding-val" style="color:#ef4444;">$18,280/day</span></div>
+            <div class="finding-row"><span class="finding-label">Leakage since overdue date (37 days)</span><span class="finding-val" style="color:#ef4444;">$676K cumulative</span></div>
+            <div class="finding-row"><span class="finding-label">Retroactive correction owed to shippers</span><span class="finding-val" style="color:#f59e0b;">Est. $338K (50% recovery)</span></div>
+            <div class="finding-row"><span class="finding-label">Net revenue impact after correction</span><span class="finding-val" style="color:#f59e0b;">-$338K</span></div>
+            <div class="finding-row"><span class="finding-label">Shipper A contract clause</span><span class="finding-val" style="color:#ef4444;">14.3 — breach in 48 hrs</span></div>
+            <div class="finding-row"><span class="finding-label">Shipper B contract clause</span><span class="finding-val" style="color:#f59e0b;">11.7 — notice only</span></div>
+            <div class="finding-row"><span class="finding-label">Calibration cost (WO-4751)</span><span class="finding-val" style="color:#22c55e;">$4,200</span></div>
+            <div class="finding-row"><span class="finding-label">Stop the clock on leakage (after cal)</span><span class="finding-val" style="color:#22c55e;">$18K/day saved</span></div>
+            <div style="margin-top:12px;padding:10px 12px;background:rgba(94,234,212,.06);border:1px solid rgba(94,234,212,.2);border-radius:var(--r);font-size:12px;color:#5eead4;">
+              WO-4751 should have been prioritised 37 days ago. Escalate to supervisor now — $4,200 calibration prevents $18K/day ongoing leakage and contract breach penalties.
+            </div>
+          </div>
+        </div>`
+    },
+
+    5: {
+      title: 'Compression load rebalancing — fuel gas optimisation · OSI Pi + SAP',
+      risk: 'Low', riskColor: '#60a5fa',
+      cost: '+$31K/month saving', costColor: '#22c55e',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:14px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current fuel gas spend</div><div class="resp-kpi-val" style="color:#ef4444;">$41K/day</div><div class="resp-kpi-note" style="color:#ef4444;">23% above plan</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Identified saving</div><div class="resp-kpi-val" style="color:#22c55e;">8%</div><div class="resp-kpi-note" style="color:#22c55e;">$3.3K/day · $99K/quarter</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Implementation effort</div><div class="resp-kpi-val" style="color:#22c55e;">SCADA only</div><div class="resp-kpi-note" style="color:#22c55e;">No hardware changes needed</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Time to implement</div><div class="resp-kpi-val" style="color:#22c55e;">&lt; 2 hrs</div><div class="resp-kpi-note" style="color:#22c55e;">Set-point changes only</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">SCADA set-point change procedure</div>
+            <div class="resp-card-sub">Control room execution · no field activity required</div>
+            <div class="step-list">
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">01</div><div><div class="step-body"><strong style="color:#fff;">Reset Unit 2 suction valve trim.</strong> SAP PM record shows the suction valve (SV-0221) was adjusted during last month's maintenance and was not returned to the set-point documented in SOP-COMP-003. Change SCADA set-point from current 58% → 78% load target.</div><div class="step-meta"><span class="src-cite sc-sca">SCADA</span> SV-0221 · <span class="src-cite sc-sap">SAP</span> PM record PM-3291</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">02</div><div><div class="step-body"><strong style="color:#fff;">Reduce Unit 1 load from 88% → 80%.</strong> Unit 1 was automatically over-loaded by the SCADA load-sharing algorithm to compensate for Unit 3 degradation. With Unit 2 restored, Unit 1 can return to its best efficiency point.</div><div class="step-meta"><span class="src-cite sc-sca">SCADA</span> load-share controller · monitor for 15 min</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#60a5fa;">03</div><div><div class="step-body"><strong style="color:#fff;">Reduce Unit 4 load from 91% → 80%.</strong> Unit 4 is operating right of BEP on the performance curve — fuel consumption per MMBTU is 9% higher than at 80% load. OSI Pi efficiency tag CU4.EFF confirms this.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> tag CU4.EFF · current: 78% → target: 87%</div></div></div>
+              <div class="step-item"><div class="step-num" style="color:#22c55e;">04</div><div><div class="step-body"><strong style="color:#fff;">Verify throughput holds above 9.0 MMBTU/d</strong> for 30 minutes after changes. OSI Pi will confirm the load redistribution is stable. Update the SCADA load-sharing algorithm baseline to reflect the new operating point so it does not revert automatically.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> 30-min monitoring · <span class="src-cite sc-sca">SCADA</span> baseline update</div></div></div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Fuel efficiency gain — by unit</div>
+            <div class="resp-card-sub">OSI Pi performance curve data · current vs. target</div>
+            <div class="unit-row"><span class="unit-name" style="font-size:12px;">Unit 1</span><div class="unit-load-wrap"><div class="unit-load-fill" style="width:88%;background:#ef4444;"></div></div><span class="unit-pct" style="color:#ef4444;">88%</span><span class="unit-action" style="color:#22c55e;font-size:11px;">→ 80% saves $1.1K/day</span></div>
+            <div class="unit-row"><span class="unit-name" style="font-size:12px;">Unit 2</span><div class="unit-load-wrap"><div class="unit-load-fill" style="width:58%;background:#f59e0b;"></div></div><span class="unit-pct" style="color:#f59e0b;">58%</span><span class="unit-action" style="color:#22c55e;font-size:11px;">→ 78% saves $0.9K/day</span></div>
+            <div class="unit-row"><span class="unit-name" style="font-size:12px;">Unit 3</span><div class="unit-load-wrap"><div class="unit-load-fill" style="width:0%;background:#ef4444;"></div></div><span class="unit-pct" style="color:#ef4444;">—</span><span class="unit-action" style="color:#ef4444;font-size:11px;">Shutdown pending</span></div>
+            <div class="unit-row"><span class="unit-name" style="font-size:12px;">Unit 4</span><div class="unit-load-wrap"><div class="unit-load-fill" style="width:91%;background:#ef4444;"></div></div><span class="unit-pct" style="color:#ef4444;">91%</span><span class="unit-action" style="color:#22c55e;font-size:11px;">→ 80% saves $1.3K/day</span></div>
+            <div class="unit-row"><span class="unit-name" style="font-size:12px;">Unit 5</span><div class="unit-load-wrap"><div class="unit-load-fill" style="width:78%;background:#22c55e;"></div></div><span class="unit-pct" style="color:#22c55e;">78%</span><span class="unit-action" style="color:#22c55e;font-size:11px;">Optimal — hold</span></div>
+            <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+            <div class="finding-row"><span class="finding-label" style="font-weight:600;color:#fff;">Total daily saving</span><span class="finding-val" style="color:#22c55e;font-size:13px;">$3,300/day</span></div>
+            <div class="finding-row"><span class="finding-label">Monthly saving</span><span class="finding-val" style="color:#22c55e;">$99K/month</span></div>
+            <div class="finding-row"><span class="finding-label">Annual saving</span><span class="finding-val" style="color:#22c55e;">$1.19M/year</span></div>
+            <div class="finding-row"><span class="finding-label">Implementation cost</span><span class="finding-val" style="color:#22c55e;">$0 (set-points only)</span></div>
+            <div class="finding-row"><span class="finding-label">Payback period</span><span class="finding-val" style="color:#22c55e;">Immediate</span></div>
+          </div>
+        </div>`
+    }
+  };
+
+  let activeRec = null;
+
+  function showRec(id, btn) {
+    const panel = document.getElementById('rec-detail-panel');
+
+    // toggle off
+    if (activeRec === id) {
+      panel.style.display = 'none';
+      btn.textContent = 'Ask AI →';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+      activeRec = null;
+      return;
+    }
+
+    // deactivate previous button
+    if (activeRec !== null) {
+      const prevBtn = document.getElementById('rec-btn-' + activeRec);
+      if (prevBtn) { prevBtn.textContent = 'Ask AI →'; prevBtn.style.color = ''; prevBtn.style.borderColor = ''; }
+    }
+
+    activeRec = id;
+    btn.textContent = 'Close ✕';
+    btn.style.color = '#f97316';
+    btn.style.borderColor = '#f97316';
+
+    const d = REC_DATA[id];
+    panel.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">AI analysis</div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:#fff;">${d.title}</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span style="font-family:var(--font-mono);font-size:11px;padding:4px 12px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:${d.riskColor};">${d.risk} risk</span>
+          <span style="font-family:var(--font-mono);font-size:11px;padding:4px 12px;border-radius:4px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:${d.costColor};">${d.cost}</span>
+        </div>
+      </div>
+      ${d.html}`;
+
+    panel.style.display = 'block';
+    panel.style.animation = 'none';
+    panel.offsetHeight;
+    panel.style.animation = 'fadeIn .3s ease both';
+
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  }
+</script>
+
+  const QUERY_CONTENT = {
+
+    risk: {
+      label: 'AI response — overall operational risk score · today 14:32',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Composite risk score</div><div class="resp-kpi-val" style="color:#ef4444;">78 / 100</div><div class="resp-kpi-note" style="color:#ef4444;">▲ HIGH — action required</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Equipment integrity</div><div class="resp-kpi-val" style="color:#ef4444;">91 / 100</div><div class="resp-kpi-note" style="color:#ef4444;">Comp Unit 3 critical</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Process safety</div><div class="resp-kpi-val" style="color:#f59e0b;">62 / 100</div><div class="resp-kpi-note" style="color:#f59e0b;">MOC-0441 overdue</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Commercial exposure</div><div class="resp-kpi-val" style="color:#f59e0b;">54 / 100</div><div class="resp-kpi-note" style="color:#f59e0b;">$18K/day meter risk</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Risk breakdown by category</div>
+            <div class="resp-card-sub">Scored 0–100 · higher = greater risk · sources cited per item</div>
+            <div class="risk-row"><span class="risk-label">Comp Unit 3 seal failure <span class="src-cite sc-pi">OSI Pi</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:94%;background:#ef4444;"></div></div><span class="risk-score" style="color:#ef4444;">94</span></div>
+            <div class="risk-row"><span class="risk-label">Pipeline Seg 7 over-pressure <span class="src-cite sc-sca">SCADA</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:82%;background:#ef4444;"></div></div><span class="risk-score" style="color:#ef4444;">82</span></div>
+            <div class="risk-row"><span class="risk-label">MOC-0441 overdue <span class="src-cite sc-gen">Gensuite</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:74%;background:#f59e0b;"></div></div><span class="risk-score" style="color:#f59e0b;">74</span></div>
+            <div class="risk-row"><span class="risk-label">Custody meter deviation <span class="src-cite sc-ra">Right Angle</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:61%;background:#f59e0b;"></div></div><span class="risk-score" style="color:#f59e0b;">61</span></div>
+            <div class="risk-row"><span class="risk-label">WO backlog — 3 overdue <span class="src-cite sc-sap">SAP</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:57%;background:#f59e0b;"></div></div><span class="risk-score" style="color:#f59e0b;">57</span></div>
+            <div class="risk-row"><span class="risk-label">Amine unit HX fouling <span class="src-cite sc-pi">OSI Pi</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:42%;background:#60a5fa;"></div></div><span class="risk-score" style="color:#60a5fa;">42</span></div>
+            <div class="risk-row"><span class="risk-label">Chemical injection pump <span class="src-cite sc-sap">SAP</span></span><div class="risk-bar-wrap"><div class="risk-bar-fill" style="width:28%;background:#22c55e;"></div></div><span class="risk-score" style="color:#22c55e;">28</span></div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Top 3 immediate actions</div>
+            <div class="resp-card-sub">AI-ranked by consequence × likelihood</div>
+            <div class="step-list">
+              <div class="step-item">
+                <div class="step-num" style="color:#ef4444;">01</div>
+                <div>
+                  <div class="step-body"><strong style="color:#fff;">Shutdown Comp Unit 3</strong> within 4 hours. Vibration 7.8 mm/s + lube oil 94°C = imminent seal failure. Close MOC-0441 in Gensuite first, then mobilise WO-4821 crew.</div>
+                  <div class="step-meta">Cost avoidance: $420K &nbsp;·&nbsp; <span class="badge-sm b-red-sm">Critical</span></div>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#ef4444;">02</div>
+                <div>
+                  <div class="step-body"><strong style="color:#fff;">Throttle Pipeline Seg 7 inlet by 8%</strong> and dispatch pig run. Pressure at 842 psig trending toward 880 MAOP at +0.4 psig/min.</div>
+                  <div class="step-meta">Exposure: $180K &nbsp;·&nbsp; <span class="badge-sm b-red-sm">High</span></div>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#f59e0b;">03</div>
+                <div>
+                  <div class="step-body"><strong style="color:#fff;">Escalate WO-4751</strong> at Pecos Terminal — meter calibration must be completed within 24 hrs to avoid shipper contract breach and $18K/day revenue leakage.</div>
+                  <div class="step-meta">Revenue at risk: $18K/day &nbsp;·&nbsp; <span class="badge-sm b-amb-sm">Medium</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`
+    },
+
+    rca: {
+      label: 'AI response — root cause analysis · Comp Unit 3 · OSI Pi + SAP + Gensuite',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current vibration</div><div class="resp-kpi-val" style="color:#ef4444;">7.8 mm/s</div><div class="resp-kpi-note" style="color:#ef4444;">ISO 10816 limit: 4.5</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Lube oil temperature</div><div class="resp-kpi-val" style="color:#ef4444;">94 °C</div><div class="resp-kpi-note" style="color:#f59e0b;">Normal range: 70–82 °C</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Hours since last PM</div><div class="resp-kpi-val" style="color:#f59e0b;">847 hrs</div><div class="resp-kpi-note" style="color:#ef4444;">Interval: 750 hrs (overdue)</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">AI failure probability</div><div class="resp-kpi-val" style="color:#ef4444;">91%</div><div class="resp-kpi-note" style="color:#ef4444;">Within 6-hour window</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Fault propagation timeline</div>
+            <div class="resp-card-sub">OSI Pi historian · last 90 days reconstructed</div>
+            <div class="step-list">
+              <div class="step-item">
+                <div class="step-num" style="color:#6b7280;">T-90d</div>
+                <div><div class="step-body">Lube oil analysis (SAP PM record) showed iron particle count elevated to 28 ppm — early wear indicator. No action recorded.</div><div class="step-meta"><span class="src-cite sc-sap">SAP</span> PM record #PM-3341</div></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#f59e0b;">T-14d</div>
+                <div><div class="step-body">OSI Pi vibration trend crossed 3.5 mm/s threshold. SCADA generated L-alarm (low priority). No work order created — alarm acknowledged and cleared by control room.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> tag CU3.VIB.X &nbsp;·&nbsp; <span class="src-cite sc-sca">SCADA</span> alarm AL-2284</div></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#f97316;">T-3d</div>
+                <div><div class="step-body">Lube oil cooler bypass valve stuck open — lube oil temp began climbing. SAP PM for lube oil cooler inspection overdue by 47 hrs at this point. No correlation made between alarm events.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> tag CU3.LOTEMP &nbsp;·&nbsp; <span class="src-cite sc-sap">SAP</span> WO-4802 (not created)</div></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#ef4444;">NOW</div>
+                <div><div class="step-body">Vibration at 7.8 mm/s, lube oil at 94°C. Seal face lubrication compromised by elevated temperature. Mechanical seal failure expected within 4–6 hours if unit remains online.</div><div class="step-meta"><span class="src-cite sc-pi">OSI Pi</span> live &nbsp;·&nbsp; <span class="badge-sm b-red-sm">Shutdown required</span></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Root cause findings</div>
+            <div class="resp-card-sub">AI cross-correlation · 5 data sources</div>
+            <div class="finding-row"><span class="finding-label">Primary root cause</span><span class="finding-val" style="color:#ef4444;">Lube oil cooler bypass failure</span></div>
+            <div class="finding-row"><span class="finding-label">Contributing factor 1</span><span class="finding-val" style="color:#f59e0b;">PM interval exceeded by 97 hrs</span></div>
+            <div class="finding-row"><span class="finding-label">Contributing factor 2</span><span class="finding-val" style="color:#f59e0b;">L-alarm not escalated to WO</span></div>
+            <div class="finding-row"><span class="finding-label">Contributing factor 3</span><span class="finding-val" style="color:#60a5fa;">MOC-0441 blocking repair</span></div>
+            <div class="finding-row"><span class="finding-label">Similar incident reference</span><span class="finding-val" style="color:#a78bfa;">Unit 1 failure Mar 2024</span></div>
+            <div class="finding-row"><span class="finding-label">Estimated repair duration</span><span class="finding-val">12–16 hrs (WO-4821)</span></div>
+            <div class="finding-row"><span class="finding-label">Parts confirmed in stock</span><span class="finding-val" style="color:#22c55e;">Yes — Midland warehouse</span></div>
+            <div class="finding-row"><span class="finding-label">Crew availability</span><span class="finding-val" style="color:#22c55e;">Shift crew on-site now</span></div>
+            <br>
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;padding-top:8px;border-top:1px solid var(--border);">
+              <strong style="color:#f97316;">AI recommendation:</strong> This failure follows the identical pattern as Unit 1 (Mar 2024). The gap in escalation protocol — where L-alarms do not auto-generate work orders — should be addressed as a systemic corrective action in Gensuite after the immediate repair.
+            </div>
+          </div>
+        </div>`
+    },
+
+    revenue: {
+      label: 'AI response — revenue efficiency analysis · Right Angle + OSI Pi + SAP',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Actual throughput</div><div class="resp-kpi-val" style="color:#22c55e;">9.14 MMBTU/d</div><div class="resp-kpi-note" style="color:#22c55e;">101.6% of target</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Revenue per MMBTU</div><div class="resp-kpi-val" style="color:#f59e0b;">$3.84</div><div class="resp-kpi-note" style="color:#f59e0b;">▼ $0.21 below plan</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Total margin leakage</div><div class="resp-kpi-val" style="color:#ef4444;">$61K/day</div><div class="resp-kpi-note" style="color:#ef4444;">Across 4 identified gaps</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Recoverable (30 days)</div><div class="resp-kpi-val" style="color:#22c55e;">$1.1M</div><div class="resp-kpi-note" style="color:#22c55e;">With recommended actions</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Margin leakage breakdown</div>
+            <div class="resp-card-sub">Right Angle + SAP · ranked by daily impact</div>
+            <div class="finding-row"><span class="finding-label">Custody meter deviation — Pecos <span class="src-cite sc-ra">Right Angle</span></span><span class="finding-val" style="color:#ef4444;">-$18K/day</span></div>
+            <div class="finding-row"><span class="finding-label">Comp Unit 3 derate (8% capacity loss) <span class="src-cite sc-pi">OSI Pi</span></span><span class="finding-val" style="color:#ef4444;">-$16K/day</span></div>
+            <div class="finding-row"><span class="finding-label">Corrosion inhibitor over-injection <span class="src-cite sc-sap">SAP</span></span><span class="finding-val" style="color:#f59e0b;">-$14K/day</span></div>
+            <div class="finding-row"><span class="finding-label">Fuel gas over-consumption (comp imbalance) <span class="src-cite sc-pi">OSI Pi</span></span><span class="finding-val" style="color:#f59e0b;">-$8K/day</span></div>
+            <div class="finding-row"><span class="finding-label">Amine unit efficiency loss (HX fouling) <span class="src-cite sc-pi">OSI Pi</span></span><span class="finding-val" style="color:#f59e0b;">-$5K/day</span></div>
+            <br>
+            <div class="finding-row" style="border-top:1px solid var(--border);padding-top:8px;"><span class="finding-label" style="font-weight:600;color:#fff;">Total identifiable leakage</span><span class="finding-val" style="color:#ef4444;font-size:13px;">-$61K/day</span></div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Shipper contract performance</div>
+            <div class="resp-card-sub">Right Angle · nominations vs. actuals vs. contract limits</div>
+            <div class="finding-row"><span class="finding-label">Shipper A</span><span class="finding-val" style="color:#22c55e;">4.4 / 4.2 MMBTU ✓</span></div>
+            <div class="finding-row"><span class="finding-label">Shipper B</span><span class="finding-val" style="color:#f59e0b;">2.7 / 2.8 MMBTU — short 3.6%</span></div>
+            <div class="finding-row"><span class="finding-label">Shipper C</span><span class="finding-val" style="color:#22c55e;">1.7 / 1.6 MMBTU ✓</span></div>
+            <div class="finding-row"><span class="finding-label">Spot</span><span class="finding-val" style="color:#f59e0b;">0.6 / 0.8 MMBTU — 25% short</span></div>
+            <div style="margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6;padding-top:10px;border-top:1px solid var(--border);">
+              <strong style="color:#f97316;">AI recommendation:</strong> Shipper B shortfall is driven by the Comp Unit 3 capacity derate. Unit 3 shutdown and repair will restore full delivery capability within 16 hrs. Spot shortfall reflects deliberate throttling of Seg 7 inlet — commercially acceptable given the pipeline over-pressure risk.
+            </div>
+          </div>
+        </div>`
+    },
+
+    maint: {
+      label: 'AI response — optimal 30-day maintenance plan · SAP + OSI Pi + Gensuite',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Total WOs to plan</div><div class="resp-kpi-val">23</div><div class="resp-kpi-note" style="color:#f59e0b;">6 critical · 8 high · 9 medium</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Planned downtime hours</div><div class="resp-kpi-val" style="color:#22c55e;">61 hrs</div><div class="resp-kpi-note" style="color:#22c55e;">vs. 347 hrs unplanned Q1</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Estimated OPEX spend</div><div class="resp-kpi-val">$284K</div><div class="resp-kpi-note" style="color:#60a5fa;">Parts confirmed in SAP</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Production impact</div><div class="resp-kpi-val" style="color:#22c55e;">Minimal</div><div class="resp-kpi-note" style="color:#22c55e;">Sequenced to avoid overlap</div></div>
+        </div>
+        <div class="resp-card" style="margin-bottom:16px;">
+          <div class="resp-card-title">Week-by-week execution schedule</div>
+          <div class="resp-card-sub">AI-sequenced to minimise throughput impact · SAP crew &amp; parts availability confirmed</div>
+          <div class="week-row">
+            <div><div class="week-badge">Week 1</div><div class="week-meta">Days 1–7</div></div>
+            <div class="week-body">
+              <strong style="color:#ef4444;">Immediate:</strong> WO-4821 — Comp Unit 3 seal replacement (12 hrs, Midland Comp. Stn). Run Unit 2 and 4 at elevated load to maintain throughput during downtime. Simultaneously close MOC-0441 in Gensuite and complete Seg 7 pig run inspection. Escalate WO-4751 meter calibration at Pecos (3 hrs, priority escalation).
+              <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-sm b-red-sm">WO-4821</span><span class="badge-sm b-red-sm">WO-4751</span><span class="badge-sm b-pur-sm">MOC-0441</span></div>
+            </div>
+          </div>
+          <div class="week-row">
+            <div><div class="week-badge">Week 2</div><div class="week-meta">Days 8–14</div></div>
+            <div class="week-body">
+              <strong style="color:#f59e0b;">High priority:</strong> WO-4798 — Permian Hub amine unit heat exchanger cleaning (8 hrs, plan for weekend to avoid shipper nomination conflict). Lube oil cooler bypass valve replacement on Unit 3 post-restart. Inspect lube oil systems on Units 1, 2, and 4 as proactive measure.
+              <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-sm b-amb-sm">WO-4798</span><span class="badge-sm b-blu-sm">Proactive — lube oil x3</span></div>
+            </div>
+          </div>
+          <div class="week-row">
+            <div><div class="week-badge">Week 3</div><div class="week-meta">Days 15–21</div></div>
+            <div class="week-body">
+              <strong style="color:#60a5fa;">Planned:</strong> Pipeline Seg 7 corrosion inhibitor injection pump replacement with upgraded redundant pump design. Recalibrate all corrosion inhibitor injection rates against Right Angle flow data — current rates are calibrated for 8.4 MMBTU/d, not actual 9.14 MMBTU/d. ILI smart pig run on Seg 7 and Seg 8.
+              <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-sm b-blu-sm">Corrosion inhibitor audit</span><span class="badge-sm b-blu-sm">ILI — Seg 7 &amp; 8</span></div>
+            </div>
+          </div>
+          <div class="week-row">
+            <div><div class="week-badge">Week 4</div><div class="week-meta">Days 22–30</div></div>
+            <div class="week-body">
+              <strong style="color:#22c55e;">Optimisation:</strong> PLC firmware update WO-4739 (6 hrs, off-peak). Compression load rebalancing — implement new set-points on Units 1–4. SAP PM schedule review: recalibrate intervals based on Q1 failure data. Gensuite audit findings closure (6 open items).
+              <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;"><span class="badge-sm b-grn-sm">WO-4739</span><span class="badge-sm b-grn-sm">Load rebalance</span><span class="badge-sm b-grn-sm">PM interval review</span></div>
+            </div>
+          </div>
+        </div>`
+    },
+
+    comp: {
+      label: 'AI response — compression load optimisation · OSI Pi + SAP',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current fuel gas spend</div><div class="resp-kpi-val" style="color:#ef4444;">$41K/day</div><div class="resp-kpi-note" style="color:#ef4444;">23% above plan</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Identified savings</div><div class="resp-kpi-val" style="color:#22c55e;">~8%</div><div class="resp-kpi-note" style="color:#22c55e;">$3.3K/day · $99K/month</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Units available</div><div class="resp-kpi-val">4</div><div class="resp-kpi-note" style="color:#f59e0b;">Unit 3 shutdown pending</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Target load balance</div><div class="resp-kpi-val" style="color:#60a5fa;">75–82%</div><div class="resp-kpi-note" style="color:#60a5fa;">Each unit optimal range</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Current vs. recommended load by unit</div>
+            <div class="resp-card-sub">OSI Pi real-time · recommended set-points to achieve 8% fuel savings</div>
+            <div style="margin-top:8px;">
+              <div class="unit-row">
+                <span class="unit-name">Unit 1</span>
+                <div class="unit-load-wrap"><div class="unit-load-fill" style="width:88%;background:#60a5fa;"></div></div>
+                <span class="unit-pct" style="color:#60a5fa;">88%</span>
+                <span class="unit-action" style="color:#f59e0b;">▼ reduce to 80%</span>
+              </div>
+              <div class="unit-row">
+                <span class="unit-name">Unit 2</span>
+                <div class="unit-load-wrap"><div class="unit-load-fill" style="width:58%;background:#f59e0b;"></div></div>
+                <span class="unit-pct" style="color:#f59e0b;">58%</span>
+                <span class="unit-action" style="color:#22c55e;">▲ increase to 78%</span>
+              </div>
+              <div class="unit-row">
+                <span class="unit-name">Unit 3</span>
+                <div class="unit-load-wrap"><div class="unit-load-fill" style="width:67%;background:#ef4444;"></div></div>
+                <span class="unit-pct" style="color:#ef4444;">67%</span>
+                <span class="unit-action" style="color:#ef4444;">Shutdown — seal fault</span>
+              </div>
+              <div class="unit-row">
+                <span class="unit-name">Unit 4</span>
+                <div class="unit-load-wrap"><div class="unit-load-fill" style="width:91%;background:#ef4444;"></div></div>
+                <span class="unit-pct" style="color:#ef4444;">91%</span>
+                <span class="unit-action" style="color:#f59e0b;">▼ reduce to 80%</span>
+              </div>
+              <div class="unit-row">
+                <span class="unit-name">Unit 5</span>
+                <div class="unit-load-wrap"><div class="unit-load-fill" style="width:78%;background:#22c55e;"></div></div>
+                <span class="unit-pct" style="color:#22c55e;">78%</span>
+                <span class="unit-action" style="color:#22c55e;">Hold — optimal range</span>
+              </div>
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Why Units 1 and 4 are over-loaded</div>
+            <div class="resp-card-sub">AI root cause — OSI Pi historian analysis</div>
+            <div style="font-size:12px;color:var(--text);line-height:1.7;">
+              <p style="margin-bottom:10px;">Unit 3 has been running at degraded performance (OEE 67%) for 14 days. The SCADA load-sharing algorithm automatically compensated by redistributing flow to Units 1 and 4, which are now running above their efficiency peak.</p>
+              <p style="margin-bottom:10px;">At loads above 88%, centrifugal compressors in this class operate right of the BEP (best efficiency point) on their performance curve — fuel gas consumption per MMBTU increases by approximately 6–9%.</p>
+              <p style="margin-bottom:12px;">Unit 2 is underloaded because its suction valve trim was adjusted during last month's PM and was not reset to the correct position — a simple SCADA set-point change will restore it to normal operating range.</p>
+              <div style="padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);">
+                <strong style="color:#f97316;">Action:</strong> After Unit 3 shutdown, revise SCADA load-sharing set-points for Units 1, 2, and 4. Reset Unit 2 suction valve trim. This single change delivers the 8% fuel gas saving without any hardware intervention.
+              </div>
+            </div>
+          </div>
+        </div>`
+    },
+
+    corr: {
+      label: 'AI response — corrosion inhibitor spend audit · SAP + Right Angle + OSI Pi',
+      html: `
+        <div class="resp-grid-4" style="margin-bottom:16px;">
+          <div class="resp-kpi"><div class="resp-kpi-label">Current monthly spend</div><div class="resp-kpi-val" style="color:#ef4444;">$62K/mo</div><div class="resp-kpi-note" style="color:#ef4444;">$18K above plan</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Injection rate (actual)</div><div class="resp-kpi-val" style="color:#f59e0b;">48 ppm</div><div class="resp-kpi-note" style="color:#f59e0b;">Target for flow: 31 ppm</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Calibrated for flow rate</div><div class="resp-kpi-val" style="color:#ef4444;">8.4 MMBTU/d</div><div class="resp-kpi-note" style="color:#ef4444;">Actual is 9.14 MMBTU/d</div></div>
+          <div class="resp-kpi"><div class="resp-kpi-label">Monthly recoverable</div><div class="resp-kpi-val" style="color:#22c55e;">$14K/mo</div><div class="resp-kpi-note" style="color:#22c55e;">No capital expenditure needed</div></div>
+        </div>
+        <div class="resp-grid-2">
+          <div class="resp-card">
+            <div class="resp-card-title">Spend audit findings by segment</div>
+            <div class="resp-card-sub">SAP purchase orders vs. Right Angle flow data · all pipeline segments</div>
+            <div class="finding-row"><span class="finding-label">Seg 7 — injection rate vs. flow <span class="src-cite sc-ra">Right Angle</span></span><span class="finding-val" style="color:#ef4444;">+55% over-dosed</span></div>
+            <div class="finding-row"><span class="finding-label">Seg 8 — injection rate vs. flow <span class="src-cite sc-ra">Right Angle</span></span><span class="finding-val" style="color:#f59e0b;">+22% over-dosed</span></div>
+            <div class="finding-row"><span class="finding-label">Seg 9 — injection rate vs. flow <span class="src-cite sc-ra">Right Angle</span></span><span class="finding-val" style="color:#22c55e;">Within spec ✓</span></div>
+            <div class="finding-row"><span class="finding-label">Seg 10 — injection rate vs. flow <span class="src-cite sc-ra">Right Angle</span></span><span class="finding-val" style="color:#22c55e;">Within spec ✓</span></div>
+            <div class="finding-row"><span class="finding-label">Last rate recalibration date <span class="src-cite sc-sap">SAP</span></span><span class="finding-val" style="color:#ef4444;">14 months ago</span></div>
+            <div class="finding-row"><span class="finding-label">Flow rate change since calibration</span><span class="finding-val" style="color:#f59e0b;">+8.8% increase</span></div>
+            <div class="finding-row"><span class="finding-label">Corrosion coupon last reading <span class="src-cite sc-pi">OSI Pi</span></span><span class="finding-val" style="color:#22c55e;">0.6 mpy — acceptable</span></div>
+            <div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;padding-top:10px;border-top:1px solid var(--border);">
+              <strong style="color:#f97316;">Finding:</strong> Injection rates on Seg 7 and 8 were set when throughput was 8.4 MMBTU/d. Since throughput increased to 9.14 MMBTU/d, the rates were never updated. The over-injection provides no additional corrosion protection — corrosion coupon data confirms inhibitor concentration is already above the saturation threshold.
+            </div>
+          </div>
+          <div class="resp-card">
+            <div class="resp-card-title">Recommended corrective actions</div>
+            <div class="resp-card-sub">No capital spend required — set-point and calibration changes only</div>
+            <div class="step-list">
+              <div class="step-item">
+                <div class="step-num" style="color:#f97316;">01</div>
+                <div><div class="step-body"><strong style="color:#fff;">Recalibrate Seg 7 injection pump</strong> from 48 ppm to 31 ppm based on Right Angle actual flow of 9.14 MMBTU/d and the vendor's recommended treat rate of 3.4 ppm per MMBTU/d.</div><div class="step-meta">Saving: $10K/mo &nbsp;·&nbsp; <span class="badge-sm b-grn-sm">No downtime</span></div></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#f59e0b;">02</div>
+                <div><div class="step-body"><strong style="color:#fff;">Recalibrate Seg 8 injection pump</strong> from current rate to 31 ppm. Add quarterly calibration checkpoint linked to Right Angle flow data changes — create SAP recurring task.</div><div class="step-meta">Saving: $4K/mo &nbsp;·&nbsp; <span class="badge-sm b-grn-sm">No downtime</span></div></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num" style="color:#60a5fa;">03</div>
+                <div><div class="step-body"><strong style="color:#fff;">Implement automated dose-rate linking</strong> between Right Angle flow measurement and SCADA injection pump speed control. This prevents recurrence as throughput continues to grow.</div><div class="step-meta">Prevents $14K+/mo recurrence &nbsp;·&nbsp; <span class="badge-sm b-blu-sm">Engineering task</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>`
+    }
+  };
+
+  let activeQuery = null;
+  let chartInstances = {};
+
+  function showQuery(key) {
+    // toggle off if same button clicked again
+    if (activeQuery === key) {
+      document.getElementById('ai-response-panel').style.display = 'none';
+      document.getElementById('qb-' + key).classList.remove('q-active');
+      activeQuery = null;
+      return;
+    }
+
+    // deactivate previous
+    if (activeQuery) {
+      document.getElementById('qb-' + activeQuery).classList.remove('q-active');
+    }
+
+    // activate new
+    activeQuery = key;
+    document.getElementById('qb-' + key).classList.add('q-active');
+
+    const panel = document.getElementById('ai-response-panel');
+    const label = document.getElementById('ai-resp-label');
+    const inner = document.getElementById('ai-resp-inner');
+
+    const content = QUERY_CONTENT[key];
+    label.textContent = content.label;
+    inner.innerHTML = content.html;
+    panel.style.display = 'block';
+    panel.style.animation = 'none';
+    panel.offsetHeight; // reflow
+    panel.style.animation = 'fadeIn .35s ease both';
+
+    // scroll to response
+    setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+    // animate risk bars after DOM settles
+    if (key === 'risk') {
+      setTimeout(() => {
+        document.querySelectorAll('.risk-bar-fill').forEach(el => {
+          const w = el.style.width; el.style.width = '0';
+          setTimeout(() => { el.style.width = w; }, 50);
+        });
+      }, 100);
+    }
+  }
+</script>
+
+</body>
+</html>

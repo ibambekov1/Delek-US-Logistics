@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DKL — Delek Logistics Full Operations & Competitive Intelligence Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0e13;--c1:#141820;--c2:#1a1f2a;--bd:#262d3a;--t1:#e2e8f0;--t2:#8b95a5;--t3:#5a6475;--o:#e8863a;--b:#4d96e8;--g:#3dba54;--p:#a87de8;--cy:#5cc4d4;--r:#e85454;--gd:#d4a843;--tl:#2db88a;--pk:#e86498;--rd:6px;--rl:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;display:grid;grid-template-columns:420px 1fr;grid-template-rows:48px 1fr}
+header{grid-column:1/-1;background:var(--c1);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:1000}
+.brand{display:flex;align-items:center;gap:8px}
+.logo{width:30px;height:30px;background:linear-gradient(135deg,var(--o),#c66a20);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;font-family:'JetBrains Mono',monospace}
+header h1{font-size:13px;font-weight:700}
+header h1 span{color:var(--t2);font-weight:400;font-size:11px}
+.hc{display:flex;gap:4px}.hb{padding:3px 8px;font-size:8px;font-family:'JetBrains Mono',monospace;background:var(--bg);border:1px solid var(--bd);border-radius:4px;color:var(--t3);cursor:pointer;font-weight:600;transition:.12s}
+.hb:hover{border-color:var(--o);color:var(--t1)}.hb.on{background:rgba(232,134,58,.1);border-color:var(--o);color:var(--o)}
+.hm{display:flex;gap:10px;font-size:9px;color:var(--t2);font-family:'JetBrains Mono',monospace;align-items:center}
+.ht{padding:2px 6px;background:rgba(232,134,58,.08);border:1px solid rgba(232,134,58,.18);border-radius:3px;color:var(--o);font-weight:600}
+aside{background:var(--c1);border-right:1px solid var(--bd);overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+aside::-webkit-scrollbar{width:4px}aside::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.tabs{display:flex;gap:0;background:var(--bg);border-radius:6px;padding:2px;border:1px solid var(--bd)}
+.tab{flex:1;padding:5px 2px;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;cursor:pointer;border-radius:4px;color:var(--t3);transition:.12s;white-space:nowrap}
+.tab:hover{color:var(--t2)}.tab.on{background:var(--c1);color:var(--o);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.tp{display:none}.tp.on{display:flex;flex-direction:column;gap:6px}
+.sec{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden}
+.sh{padding:7px 9px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);display:flex;align-items:center;gap:5px;cursor:pointer;transition:.1s}
+.sh:hover{background:var(--c2)}.sh .d{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sh .ar{margin-left:auto;font-size:7px;transition:transform .2s}
+.sec.cl .ar{transform:rotate(-90deg)}.sec.cl .sb{display:none}
+.sb{padding:0 9px 9px}
+.ac{padding:5px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:.1s}
+.ac:last-child{border-bottom:none}.ac:hover .an{color:var(--o)}
+.an{font-size:10px;font-weight:600;margin-bottom:1px;transition:color .1s}
+.ad{font-size:8px;color:var(--t2);line-height:1.3;font-family:'JetBrains Mono',monospace}
+.ad .l{color:var(--t3)}
+.sr{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;font-size:9px;border-bottom:1px solid rgba(38,45,58,.4)}
+.sr:last-child{border-bottom:none}.sl{color:var(--t2)}.sv{font-weight:600;font-family:'JetBrains Mono',monospace;font-size:9px}
+.fc{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rd);padding:7px;margin-bottom:5px}
+.ft{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:4px}
+.fr{display:flex;justify-content:space-between;padding:2px 0;font-size:9px;border-bottom:1px solid rgba(38,45,58,.25)}
+.fr:last-child{border-bottom:none}.fl{color:var(--t2)}.fv{font-weight:600;font-family:'JetBrains Mono',monospace;font-size:9px}
+.fv.g{color:var(--g)}.fv.r{color:var(--r)}.fv.o{color:var(--o)}.fv.b{color:var(--b)}.fv.p{color:var(--p)}
+.fb{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.fs{font-size:7px;color:var(--t2);margin-top:1px}
+.bi{display:flex;align-items:center;gap:4px;margin-top:2px}
+.bl{font-size:8px;color:var(--t2);width:48px;text-align:right;flex-shrink:0}
+.bt{flex:1;height:11px;background:rgba(38,45,58,.5);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:3px;font-size:6px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#fff;transition:width .5s}
+.spr{display:flex;align-items:center;gap:5px;margin-top:2px}
+.spl{font-size:7px;color:var(--t3);width:22px;flex-shrink:0}
+.spt{flex:1;height:4px;background:rgba(38,45,58,.5);border-radius:2px;overflow:hidden}
+.spf{height:100%;border-radius:2px}
+.spv{font-size:7px;font-family:'JetBrains Mono',monospace;width:48px;text-align:right;flex-shrink:0}
+#map{width:100%;height:100%;background:var(--bg)}
+.leaflet-popup-content-wrapper{background:var(--c1)!important;color:var(--t1)!important;border:1px solid var(--bd)!important;border-radius:8px!important;box-shadow:0 8px 30px rgba(0,0,0,.5)!important;padding:0!important;font-family:'DM Sans',sans-serif!important}
+.leaflet-popup-tip{background:var(--c1)!important;border:1px solid var(--bd)!important}
+.leaflet-popup-content{margin:0!important;width:240px!important}
+@keyframes dash{to{stroke-dashoffset:-30}}
+.leaflet-control-attribution{font-size:7px!important;background:rgba(11,14,19,.85)!important;color:var(--t3)!important}
+.leaflet-control-attribution a{color:var(--b)!important}
+.leaflet-control-zoom a{background:var(--c1)!important;color:var(--t1)!important;border-color:var(--bd)!important}
+#dp{position:fixed;top:48px;right:0;width:420px;height:calc(100vh - 48px);background:var(--c1);border-left:1px solid var(--bd);z-index:900;overflow-y:auto;padding:14px;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:-6px 0 20px rgba(0,0,0,.3)}
+#dp.open{transform:translateX(0)}#dp::-webkit-scrollbar{width:4px}#dp::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.dpx{position:absolute;top:10px;right:10px;width:22px;height:22px;background:var(--bg);border:1px solid var(--bd);border-radius:4px;color:var(--t2);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dpt{font-size:14px;font-weight:700;margin-bottom:2px;padding-right:28px}
+.dps{font-size:8px;color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.dpn{margin-bottom:10px}
+.dpnt{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin-bottom:5px}
+.dpg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.dpm{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rd);padding:7px}
+.dpmv{font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.dpml{font-size:6px;color:var(--t2);margin-top:1px;text-transform:uppercase;letter-spacing:.04em}
+.dpli{padding:3px 0;border-bottom:1px solid rgba(38,45,58,.35);font-size:9px;display:flex;justify-content:space-between}
+.dpli:last-child{border-bottom:none}
+.pp{display:flex;flex-wrap:wrap;gap:2px;margin-top:3px}
+.ppt{font-size:6px;padding:1px 4px;border-radius:2px;background:rgba(77,150,232,.08);color:var(--b);border:1px solid rgba(77,150,232,.12)}
+table.ct{width:100%;border-collapse:collapse;font-size:7px;font-family:'JetBrains Mono',monospace}
+table.ct th{text-align:right;padding:3px 2px;color:var(--t3);font-size:6px;border-bottom:1px solid var(--bd)}
+table.ct th:first-child{text-align:left}
+table.ct td{text-align:right;padding:2px;border-bottom:1px solid rgba(38,45,58,.25)}
+table.ct td:first-child{text-align:left;color:var(--t2)}
+.vd-row{display:flex;align-items:center;gap:4px;padding:3px 0;border-bottom:1px solid rgba(38,45,58,.2);font-size:8px}
+.vd-row:last-child{border-bottom:none}
+.vd-lbl{flex:1;color:var(--t2);font-size:7px}
+.vd-cur{width:36px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:600}
+.vd-bar{flex:1.5;height:6px;background:rgba(38,45,58,.5);border-radius:3px;overflow:hidden;position:relative}
+.vd-fill{height:100%;border-radius:3px;position:absolute;left:0;top:0}
+.vd-val{width:55px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:7px;font-weight:600;color:var(--g)}
+@media(max-width:960px){body{grid-template-columns:1fr}aside{display:none}#dp{width:100%}}
+</style>
+</head>
+<body>
+<header>
+<div class="brand"><div class="logo">DKL</div><h1>DKL Operations & Competitive Intelligence <span>— Vistratex Analysis Dashboard</span></h1></div>
+<div class="hc">
+<button class="hb on" onclick="tgl('dkl',this)">DKL Assets</button>
+<button class="hb on" onclick="tgl('comp',this)">Competitors</button>
+<button class="hb" onclick="tgl('padd',this)">PADD</button>
+</div>
+<div class="hm"><span class="ht">FY25 $535.6M EBITDA</span><span>Vistratex Target: $650-740M</span></div>
+</header>
+<aside>
+<div class="tabs">
+<div class="tab on" onclick="st('a',this)">Assets</div>
+<div class="tab" onclick="st('f',this)">Financials</div>
+<div class="tab" onclick="st('v',this)">Vistratex</div>
+<div class="tab" onclick="st('b',this)">Benchmark</div>
+<div class="tab" onclick="st('p',this)">Peers</div>
+<div class="tab" onclick="st('r',this)">RAU</div>
+</div>
+<div id="ta" class="tp on"></div>
+<div id="tf" class="tp"></div>
+<div id="tv" class="tp"></div>
+<div id="tb" class="tp"></div>
+<div id="tp" class="tp"></div>
+<div id="tr" class="tp"></div>
+</aside>
+<div id="map"></div>
+<div id="dp"><button class="dpx" onclick="cp()">✕</button><div id="dc"></div></div>
+
+<script>
+// ══════════════════════════════════════════════════
+// OPERATOR COLORS
+// ══════════════════════════════════════════════════
+const OC={DKL:'#e8863a',EPD:'#4d96e8',ET:'#3dba54',MPLX:'#a87de8',PAA:'#d4a843',OKE:'#5cc4d4',GEL:'#e86498',USAC:'#8b95a5'};
+
+// ══════════════════════════════════════════════════
+// DKL PIPELINE DATA
+// ══════════════════════════════════════════════════
+const DKL_PIPES=[
+{id:'etc',n:'East TX Crude Logistics',path:[[32.77,-94.40],[32.60,-94.80],[32.45,-95.10],[32.35,-95.30]],mi:65,cap:75000,c:'#e8863a',t:'crude',op:'DKL'},
+{id:'rr',n:'Red River (JV 33%)',path:[[35.95,-96.75],[35.50,-96.20],[35.00,-95.60],[34.50,-95.20],[34.00,-94.80],[33.50,-94.90],[33.10,-95.00],[32.70,-95.10],[32.50,-94.75]],mi:370,cap:235000,c:'#a87de8',t:'jv',op:'DKL/PAA'},
+{id:'mg',n:'Midland Gathering',path:[[32.55,-101.80],[32.45,-101.70],[32.35,-101.55],[32.30,-101.50],[32.25,-101.48]],mi:200,cap:350000,c:'#3dba54',t:'gathering',op:'DKL'},
+{id:'bsp',n:'Big Spring-Midland',path:[[32.25,-101.48],[32.15,-101.60],[32.05,-101.80],[32.00,-102.08]],mi:40,cap:50000,c:'#e8863a',t:'crude',op:'DKL'},
+{id:'edg',n:'El Dorado/AR Gathering',path:[[33.80,-92.90],[33.60,-92.80],[33.40,-92.70],[33.21,-92.66]],mi:600,cap:80000,c:'#3dba54',t:'gathering',op:'DKL'},
+{id:'tp',n:'Tyler Product Pipeline',path:[[32.35,-95.30],[32.50,-95.10],[32.70,-94.90],[33.00,-94.80],[33.16,-94.97]],mi:80,cap:60000,c:'#4d96e8',t:'refined',op:'DKL'},
+{id:'edp',n:'El Dorado Product',path:[[33.21,-92.66],[33.50,-92.20],[34.00,-91.50],[34.50,-90.80],[35.15,-90.05]],mi:200,cap:60000,c:'#4d96e8',t:'refined',op:'DKL'},
+{id:'w2w',n:'Wink to Webster (JV 15%)',path:[[31.75,-103.16],[31.80,-102.50],[31.99,-102.08],[32.10,-101.50],[32.00,-100.50],[31.60,-99.50],[31.00,-98.50],[30.50,-97.50],[30.00,-96.50],[29.70,-95.80],[29.55,-95.30],[29.54,-95.17]],mi:650,cap:1500000,c:'#a87de8',t:'jv',op:'DKL/XOM'},
+{id:'dg',n:'Delaware Basin G&P',path:[[32.50,-104.20],[32.35,-104.00],[32.20,-103.80],[32.10,-103.50],[32.05,-103.30]],mi:300,cap:null,c:'#3dba54',t:'gathering',op:'DKL'},
+];
+
+// ══════════════════════════════════════════════════
+// COMPETITOR PIPELINE/TERMINAL DATA (major systems in DKL operating area)
+// ══════════════════════════════════════════════════
+const COMP_PIPES=[
+// EPD
+{n:'Enterprise Seminole NGL',path:[[32.20,-102.50],[31.80,-101.50],[31.40,-100.50],[31.00,-99.50],[30.60,-98.50],[30.20,-97.50],[29.80,-96.50],[29.60,-95.50],[29.50,-95.00]],c:OC.EPD,op:'EPD',mi:400,t:'NGL'},
+{n:'Enterprise Midland Basin',path:[[32.30,-102.20],[32.10,-101.80],[31.99,-101.50],[31.90,-101.20]],c:OC.EPD,op:'EPD',mi:80,t:'crude'},
+// ET
+{n:'ET Permian Express',path:[[31.90,-102.10],[31.50,-101.00],[31.20,-100.00],[30.80,-99.00],[30.40,-98.00],[30.10,-97.20],[29.80,-96.50],[29.60,-95.50],[29.45,-95.10]],c:OC.ET,op:'ET',mi:500,t:'crude'},
+{n:'ET Lone Star NGL',path:[[32.40,-101.60],[32.00,-100.80],[31.50,-99.80],[31.00,-98.80],[30.50,-97.80],[30.00,-97.00]],c:OC.ET,op:'ET',mi:380,t:'NGL'},
+// PAA
+{n:'Plains Basin Pipeline',path:[[32.00,-102.10],[31.80,-101.50],[31.60,-101.00],[31.40,-100.50],[31.20,-100.00],[31.00,-99.70]],c:OC.PAA,op:'PAA',mi:200,t:'crude'},
+{n:'Plains Red River (67%)',path:[[35.95,-96.75],[35.40,-96.10],[34.80,-95.40],[34.20,-95.00],[33.60,-94.90],[33.00,-94.85],[32.50,-94.75]],c:OC.PAA,op:'PAA',mi:370,t:'crude'},
+// MPLX
+{n:'MPLX Whistler NatGas',path:[[31.75,-103.00],[31.50,-102.20],[31.30,-101.50],[31.10,-100.80],[30.80,-100.00],[30.50,-99.20],[30.20,-98.50]],c:OC.MPLX,op:'MPLX',mi:450,t:'NatGas'},
+// OKE
+{n:'ONEOK West TX NGL',path:[[32.00,-102.00],[31.70,-101.20],[31.40,-100.40],[31.10,-99.60],[30.80,-99.00]],c:OC.OKE,op:'OKE',mi:300,t:'NGL'},
+];
+
+const COMP_TERMS=[
+// EPD terminals
+{n:'EPD Mont Belvieu',ll:[29.85,-94.90],op:'EPD',type:'NGL Hub',c:OC.EPD},
+{n:'EPD Midland Terminal',ll:[31.99,-102.10],op:'EPD',type:'Crude/NGL',c:OC.EPD},
+{n:'EPD Houston Ship Channel',ll:[29.73,-95.08],op:'EPD',type:'Export',c:OC.EPD},
+{n:'EPD Beaumont Terminal',ll:[30.08,-94.10],op:'EPD',type:'Crude Export',c:OC.EPD},
+// ET terminals
+{n:'ET Nederland Terminal',ll:[29.97,-94.00],op:'ET',type:'Crude Export',c:OC.ET},
+{n:'ET Midland Terminal',ll:[32.05,-102.00],op:'ET',type:'Crude',c:OC.ET},
+{n:'ET Houston Terminal',ll:[29.75,-95.20],op:'ET',type:'Refined Products',c:OC.ET},
+// PAA
+{n:'PAA Cushing Terminal',ll:[35.98,-96.78],op:'PAA',type:'Crude Hub',c:OC.PAA},
+{n:'PAA Midland Terminal',ll:[31.95,-102.05],op:'PAA',type:'Crude',c:OC.PAA},
+// MPLX
+{n:'MPLX Galveston Bay',ll:[29.35,-94.90],op:'MPLX',type:'Refinery Logistics',c:OC.MPLX},
+// OKE
+{n:'OKE Medford NGL',ll:[36.80,-97.73],op:'OKE',type:'NGL Frac',c:OC.OKE},
+{n:'OKE West TX Hub',ll:[31.80,-102.50],op:'OKE',type:'NGL Gathering',c:OC.OKE},
+// GEL
+{n:'GEL CHOPS Pipeline Hub',ll:[28.90,-89.50],op:'GEL',type:'Offshore GoM',c:OC.GEL},
+];
+
+// DKL Terminals
+const DKL_TERMS=[
+{n:'Tyler Terminal',ll:[32.36,-95.28],type:'Crude & Product',c:OC.DKL},
+{n:'El Dorado Terminal',ll:[33.22,-92.64],type:'Crude & Product',c:OC.DKL},
+{n:'Memphis Terminal',ll:[35.15,-90.05],type:'Product Dist.',c:OC.DKL},
+{n:'Nashville Terminal',ll:[36.16,-86.78],type:'Product Dist.',c:OC.DKL},
+{n:'Mt. Pleasant Terminal',ll:[33.16,-94.97],type:'Product Dist.',c:OC.DKL},
+{n:'Big Spring Terminal',ll:[32.25,-101.47],type:'Crude Storage',c:OC.DKL},
+{n:'N. Little Rock Terminal',ll:[34.77,-92.27],type:'Asphalt/Product',c:OC.DKL},
+{n:'Abilene Terminal',ll:[32.45,-99.73],type:'Product Dist.',c:OC.DKL},
+{n:'San Angelo Terminal',ll:[31.46,-100.44],type:'Product Dist.',c:OC.DKL},
+{n:'Libby 1 Gas Plant',ll:[32.35,-103.90],type:'Gas Processing',c:'#2db88a'},
+{n:'Libby 2 Gas Plant',ll:[32.30,-103.95],type:'Gas Processing',c:'#2db88a'},
+{n:'H2O Midstream',ll:[32.10,-101.90],type:'Water Midstream',c:'#5cc4d4'},
+{n:'Gravity Water',ll:[32.25,-102.30],type:'Water Midstream',c:'#5cc4d4'},
+];
+
+// ══════════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════════
+const map=L.map('map',{center:[32,-98],zoom:6,zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+
+function mi(c,s=8,sh='circle'){const h=s+3;
+if(sh==='sq')return L.divIcon({className:'',html:'<svg width="'+h+'" height="'+h+'"><rect x="1.5" y="1.5" width="'+s+'" height="'+s+'" rx="2" fill="'+c+'" stroke="#0b0e13" stroke-width="1.5"/></svg>',iconSize:[h,h],iconAnchor:[h/2,h/2]});
+if(sh==='di')return L.divIcon({className:'',html:'<svg width="'+h+'" height="'+h+'" viewBox="0 0 '+h+' '+h+'"><rect x="'+(h/2)+'" y="2" width="'+(s*.55)+'" height="'+(s*.55)+'" transform="rotate(45 '+(h/2)+' '+(h/2)+')" fill="'+c+'" stroke="#0b0e13" stroke-width="1.5"/></svg>',iconSize:[h,h],iconAnchor:[h/2,h/2]});
+return L.divIcon({className:'',html:'<svg width="'+h+'" height="'+h+'"><circle cx="'+(h/2)+'" cy="'+(h/2)+'" r="'+(s/2)+'" fill="'+c+'" stroke="#0b0e13" stroke-width="1.5"/></svg>',iconSize:[h,h],iconAnchor:[h/2,h/2]});}
+
+const LG={dkl:L.layerGroup().addTo(map),comp:L.layerGroup().addTo(map),padd:L.layerGroup()};
+
+// Draw DKL pipes
+DKL_PIPES.forEach(p=>{
+LG.dkl.addLayer(L.polyline(p.path,{color:p.c,weight:6,opacity:.08,smoothFactor:1.5}));
+const l=L.polyline(p.path,{color:p.c,weight:2.5,opacity:.8,smoothFactor:1.5,dashArray:p.t==='jv'?'7 5':null});
+LG.dkl.addLayer(l);
+LG.dkl.addLayer(L.polyline(p.path,{color:'#fff',weight:1,opacity:.15,dashArray:'3 22',smoothFactor:1.5,className:'fl'}));
+l.bindTooltip('<b>'+p.n+'</b><br>DKL · '+p.mi+' mi'+(p.cap?' · '+p.cap.toLocaleString()+' bpd':''),{sticky:true,className:'ptt'});
+l.on('click',function(){openP(p)});
+});
+
+// Draw competitor pipes
+COMP_PIPES.forEach(p=>{
+LG.comp.addLayer(L.polyline(p.path,{color:p.c,weight:5,opacity:.04,smoothFactor:1.5}));
+const l=L.polyline(p.path,{color:p.c,weight:1.8,opacity:.5,smoothFactor:1.5,dashArray:'5 4'});
+LG.comp.addLayer(l);
+l.bindTooltip('<b>'+p.n+'</b><br>'+p.op+' · '+p.mi+' mi · '+p.t,{sticky:true,className:'ptt'});
+});
+
+// Draw DKL terminals
+DKL_TERMS.forEach(t=>{
+const m=L.marker(t.ll,{icon:mi(t.c,9,'sq')});LG.dkl.addLayer(m);
+m.bindTooltip('<b>'+t.n+'</b><br>DKL · '+t.type,{direction:'top',offset:[0,-5]});
+m.on('click',function(){openT(t,'DKL')});
+});
+
+// Draw competitor terminals
+COMP_TERMS.forEach(t=>{
+const m=L.marker(t.ll,{icon:mi(t.c,7,'di')});LG.comp.addLayer(m);
+m.bindTooltip('<b>'+t.n+'</b><br>'+t.op+' · '+t.type,{direction:'top',offset:[0,-5]});
+m.on('click',function(){openT(t,t.op)});
+});
+
+// Key labels
+[{n:'Cushing OK',ll:[35.985,-96.77]},{n:'Midland TX',ll:[31.997,-102.078]},{n:'Houston TX',ll:[29.54,-95.12]},{n:'Longview TX',ll:[32.50,-94.74]},{n:'Tyler TX',ll:[32.35,-95.30]},{n:'El Dorado AR',ll:[33.21,-92.66]},{n:'Big Spring TX',ll:[32.25,-101.48]},{n:'Mont Belvieu',ll:[29.85,-94.90]}].forEach(k=>{
+LG.dkl.addLayer(L.marker(k.ll,{icon:L.divIcon({className:'',html:'<div style="font-size:7px;color:#5a647560;font-family:\'JetBrains Mono\',monospace;white-space:nowrap;text-shadow:0 0 3px #0b0e13">'+k.n+'</div>',iconAnchor:[-3,3]})}));
+});
+
+// PADD zones
+[{n:'PADD 2',c:'#4d96e8',ct:[39,-88],b:[[36,-95],[36,-82],[43,-82],[43,-95]]},{n:'PADD 3',c:'#e8863a',ct:[30.5,-98],b:[[28,-106],[28,-88],[36,-88],[36,-106]]}].forEach(z=>{
+LG.padd.addLayer(L.polygon(z.b,{color:z.c,weight:1.5,opacity:.2,fillColor:z.c,fillOpacity:.02,dashArray:'5 4'}));
+});
+
+const sty=document.createElement('style');
+sty.textContent='.fl{animation:dash 2s linear infinite}.ptt{background:#141820!important;color:#e2e8f0!important;border:1px solid #262d3a!important;border-radius:4px!important;font-family:\'DM Sans\',sans-serif!important;font-size:8px!important;padding:3px 6px!important;box-shadow:0 3px 8px rgba(0,0,0,.4)!important}';
+document.head.appendChild(sty);
+
+function tgl(n,b){b.classList.toggle('on');map.hasLayer(LG[n])?map.removeLayer(LG[n]):map.addLayer(LG[n])}
+function st(n,e){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.tp').forEach(t=>t.classList.remove('on'));e.classList.add('on');document.getElementById('t'+n).classList.add('on')}
+function ts(h){h.parentElement.classList.toggle('cl')}
+function cp(){document.getElementById('dp').classList.remove('open')}
+map.on('click',cp);
+
+function getEHS(op){
+var d={DKL:{trir:0.85,dart:0.42,spills:'<5 minor',envL:'$36M (DK consol)',ghg:'~180k mt',prog:'Zero Incident Goal',reg:'PHMSA/TCEQ/ADEQ/LDEQ',integ:'ILI + Direct Assessment',insp:'2024-25 cycle',rev:'Fee + MVC',tar:'$0.65-1.20',opx:'$0.35-0.55',av:97,ut:70,tu:65,ti:'API 653/STI SP001',vap:'VRU installed',spcc:'SPCC active',air:'Title V/NSR'},
+EPD:{trir:0.42,dart:0.21,spills:'<10',envL:'~$350M',ghg:'~12M mt',prog:'Life Saving Rules',reg:'PHMSA/EPA/FERC',integ:'ILI + hydrostatic',insp:'Continuous',rev:'82% fee-based',tar:'$0.40-0.90',opx:'$0.20-0.40',av:99,ut:90,tu:92,ti:'API 653 program',vap:'VRU + thermal',spcc:'SPCC + FRP',air:'Title V/NSPS'},
+ET:{trir:0.58,dart:0.30,spills:'<15',envL:'~$500M+',ghg:'~25M mt',prog:'HSEMS',reg:'PHMSA/EPA/FERC/RRC',integ:'ILI + ECDA + SCCDA',insp:'Continuous',rev:'~90% fee-based',tar:'$0.35-0.85',opx:'$0.25-0.45',av:98,ut:87,tu:85,ti:'API 653/RBI',vap:'VRU systems',spcc:'SPCC + FRP',air:'Title V/NSPS/NESHAP'},
+PAA:{trir:0.55,dart:0.28,spills:'<8',envL:'~$200M',ghg:'~4M mt',prog:'Operational Excellence',reg:'PHMSA/EPA/FERC',integ:'ILI + hydrostatic + DA',insp:'Continuous',rev:'~85% fee-based',tar:'$0.50-1.00',opx:'$0.25-0.45',av:99,ut:88,tu:87,ti:'API 653',vap:'VRU installed',spcc:'SPCC active',air:'Title V'},
+MPLX:{trir:0.38,dart:0.19,spills:'<5',envL:'~$150M',ghg:'~8M mt',prog:'MPC HSEMS',reg:'PHMSA/EPA/FERC',integ:'ILI + ECDA',insp:'Continuous',rev:'~90% fee-based',tar:'$0.45-0.95',opx:'$0.22-0.38',av:99,ut:89,tu:88,ti:'API 653/RBI',vap:'VRU + flare',spcc:'SPCC + FRP',air:'Title V/NSPS'},
+OKE:{trir:0.45,dart:0.22,spills:'<5',envL:'~$100M',ghg:'~6M mt',prog:'Journey to Zero',reg:'PHMSA/EPA/FERC',integ:'ILI + ECDA',insp:'Continuous',rev:'~90% fee-based',tar:'$0.40-0.80',opx:'$0.20-0.35',av:99,ut:90,tu:88,ti:'API 653',vap:'VRU systems',spcc:'SPCC active',air:'Title V/NSPS'},
+GEL:{trir:0.72,dart:0.35,spills:'<3',envL:'~$80M',ghg:'~2M mt',prog:'Safety Leadership',reg:'BSEE/PHMSA/EPA',integ:'ILI + subsea',insp:'Annual deepwater',rev:'~80% fee-based',tar:'$2.50-5.00',opx:'$1.50-3.00',av:97,ut:75,tu:80,ti:'API 653',vap:'Offshore flare',spcc:'OSRP',air:'OCS permits'}};
+var o=op.split('/')[0];
+var r=d[o]||d['DKL'];
+if(op==='DKL/PAA')r={...r,rev:'JV fee (DKL 33%)',reg:'PHMSA/Plains-op',prog:'Plains OpEx+DKL'};
+if(op==='DKL/XOM')r={...r,rev:'JV fee (DKL 15%)',reg:'PHMSA/XOM-op',prog:'XOM OIMS',trir:0.30,av:99,ut:85};
+return r;}
+
+function openP(p){var e=getEHS(p.op);
+document.getElementById('dc').innerHTML='<div class="dpt">'+p.n+'</div><div class="dps" style="color:'+p.c+'">'+p.op+' · '+(p.t||'Pipeline')+'</div>'+
+'<div class="dpn"><div class="dpnt">Specifications</div><div class="dpg">'+(p.mi?'<div class="dpm"><div class="dpmv">'+p.mi+'</div><div class="dpml">Miles</div></div>':'')+(p.cap?'<div class="dpm"><div class="dpmv" style="color:var(--g)">'+p.cap.toLocaleString()+'</div><div class="dpml">Capacity BPD</div></div>':'')+'</div></div>'+
+'<div class="dpn"><div class="dpnt">Operational Data</div>'+
+'<div class="dpli"><span style="color:var(--t2)">Operator</span><span>'+p.op+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Revenue Model</span><span>'+e.rev+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Est. Utilization</span><span style="color:'+(e.ut>80?'var(--g)':e.ut>60?'var(--gd)':'var(--r)')+'">'+e.ut+'%</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Availability</span><span style="color:var(--g)">'+e.av+'%</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Est. Tariff</span><span>'+e.tar+'/bbl</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Est. OpEx</span><span>'+e.opx+'/bbl</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Integrity Method</span><span>'+e.integ+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Last ILI/Inspection</span><span>'+e.insp+'</span></div>'+
+'</div>'+
+'<div class="dpn"><div class="dpnt">EHS Performance</div>'+
+'<div class="dpli"><span style="color:var(--t2)">Operator TRIR</span><span style="color:'+(e.trir<0.5?'var(--g)':e.trir<1?'var(--gd)':'var(--r)')+'">'+e.trir+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">DART Rate</span><span>'+e.dart+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Reportable Spills (FY)</span><span>'+e.spills+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Env. Liability</span><span>'+e.envL+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">GHG Scope 1+2</span><span>'+e.ghg+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Safety Program</span><span>'+e.prog+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Regulatory</span><span style="font-size:7px">'+e.reg+'</span></div>'+
+'</div>';document.getElementById('dp').classList.add('open')}
+
+function openT(t,op){var e=getEHS(op);
+document.getElementById('dc').innerHTML='<div class="dpt">'+t.n+'</div><div class="dps" style="color:'+(t.c||'var(--o)')+'">'+op+' · '+t.type+'</div>'+
+'<div class="dpn"><div class="dpnt">Facility Details</div>'+
+'<div class="dpli"><span style="color:var(--t2)">Operator</span><span>'+op+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Type</span><span>'+t.type+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Location</span><span>'+t.ll[0].toFixed(2)+', '+t.ll[1].toFixed(2)+'</span></div>'+
+'</div>'+
+'<div class="dpn"><div class="dpnt">Operational Data</div>'+
+'<div class="dpli"><span style="color:var(--t2)">Est. Utilization</span><span style="color:'+(e.tu>80?'var(--g)':e.tu>60?'var(--gd)':'var(--r)')+'">'+e.tu+'%</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Availability</span><span style="color:var(--g)">'+e.av+'%</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Revenue Model</span><span>'+e.rev+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Tank Inspection</span><span>'+e.ti+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Vapor Recovery</span><span>'+e.vap+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">SPCC Status</span><span>'+e.spcc+'</span></div>'+
+'</div>'+
+'<div class="dpn"><div class="dpnt">EHS Performance</div>'+
+'<div class="dpli"><span style="color:var(--t2)">Operator TRIR</span><span style="color:'+(e.trir<0.5?'var(--g)':e.trir<1?'var(--gd)':'var(--r)')+'">'+e.trir+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">DART Rate</span><span>'+e.dart+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Env. Liability</span><span>'+e.envL+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Air Permit</span><span>'+e.air+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Safety Program</span><span>'+e.prog+'</span></div>'+
+'<div class="dpli"><span style="color:var(--t2)">Regulatory</span><span style="font-size:7px">'+e.reg+'</span></div>'+
+'</div>';document.getElementById('dp').classList.add('open')}
+
+// ══════════════════════════════════════════════════
+// TAB BUILDERS
+// ══════════════════════════════════════════════════
+// ASSETS TAB
+document.getElementById('ta').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>DKL SYSTEM OVERVIEW<span class="ar">▼</span></div><div class="sb">
+<div class="sr"><span class="sl">Pipeline Miles</span><span class="sv">~2,204</span></div>
+<div class="sr"><span class="sl">Active Shell Storage</span><span class="sv">~10.0 MMbbl</span></div>
+<div class="sr"><span class="sl">Water Disposal Cap.</span><span class="sv">310 MBbl/d</span></div>
+<div class="sr"><span class="sl">Gas Processing</span><span class="sv">88 MMcf/d</span></div>
+<div class="sr"><span class="sl">Terminals</span><span class="sv">9 light product</span></div>
+<div class="sr"><span class="sl">Trucking</span><span class="sv">161 tractors / 306 trailers</span></div>
+<div class="sr"><span class="sl">DK Ownership</span><span class="sv">63.3%</span></div>
+<div class="sr"><span class="sl">3P EBITDA (2026E)</span><span class="sv" style="color:var(--g)">~80%</span></div>
+<div style="margin-top:6px;font-size:7px;color:var(--t3);font-weight:700">MAP LEGEND — OPERATOR COLORS</div>
+${Object.entries(OC).map(([k,v])=>'<div style="display:flex;align-items:center;gap:4px;margin-top:2px"><div style="width:10px;height:3px;background:'+v+';border-radius:1px"></div><span style="font-size:8px;color:var(--t2)">'+k+'</span></div>').join('')}
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>DKL PIPELINES (${DKL_PIPES.length})<span class="ar">▼</span></div><div class="sb">
+${DKL_PIPES.map(p=>'<div class="ac" onclick="openP(DKL_PIPES.find(x=>x.id===\''+p.id+'\'))"><div class="an">'+p.n+'</div><div class="ad"><span class="l">'+p.mi+' mi</span>'+(p.cap?' · <span class="l">Cap:</span> '+p.cap.toLocaleString():'')+'</div></div>').join('')}
+</div></div>
+<div class="sec cl"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--gd)"></div>DKL TERMINALS (${DKL_TERMS.length})<span class="ar">▼</span></div><div class="sb">
+${DKL_TERMS.map(t=>'<div class="ac"><div class="an">'+t.n+'</div><div class="ad">'+t.type+'</div></div>').join('')}
+</div></div>
+<div class="sec cl"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--b)"></div>COMPETITOR INFRASTRUCTURE<span class="ar">▼</span></div><div class="sb">
+${COMP_PIPES.map(p=>'<div class="ac"><div class="an" style="color:'+p.c+'">'+p.n+'</div><div class="ad"><span class="l">'+p.op+'</span> · '+p.mi+' mi · '+p.t+'</div></div>').join('')}
+<div style="margin-top:5px;font-size:7px;color:var(--t3);font-weight:700">COMPETITOR TERMINALS</div>
+${COMP_TERMS.map(t=>'<div class="ac"><div class="an" style="color:'+t.c+'">'+t.n+'</div><div class="ad"><span class="l">'+t.op+'</span> · '+t.type+'</div></div>').join('')}
+</div></div>`;
+
+// FINANCIALS TAB
+document.getElementById('tf').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>DKL Q4 2025 — RECORD<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">Consolidated</div>
+<div class="fr"><span class="fl">Net Income</span><span class="fv g">$47.3M</span></div>
+<div class="fr"><span class="fl">Per Unit</span><span class="fv">$0.88</span></div>
+<div class="fr"><span class="fl">Adj. EBITDA (Q4)</span><span class="fv g">$142.3M</span></div>
+<div class="fr"><span class="fl">FY25 Adj. EBITDA</span><span class="fv g">$535.6M (record)</span></div>
+<div class="fr"><span class="fl">Distribution</span><span class="fv g">$1.125/unit (52nd↑)</span></div>
+<div class="fr"><span class="fl">DCF (Q4)</span><span class="fv">$73.3M</span></div>
+</div>
+<div class="fc"><div class="ft">Segment EBITDA — Q4</div>
+<div class="bi"><div class="bl">G&P</div><div class="bt"><div class="bf" style="width:50%;background:var(--g)">$71M</div></div></div>
+<div class="bi"><div class="bl">Stor/Trans</div><div class="bt"><div class="bf" style="width:25%;background:var(--b)">$35M</div></div></div>
+<div class="bi"><div class="bl">JV Pipes</div><div class="bt"><div class="bf" style="width:18%;background:var(--p)">$26M</div></div></div>
+<div class="bi"><div class="bl">Wholesale</div><div class="bt"><div class="bf" style="width:15%;background:var(--gd)">$21M</div></div></div>
+</div></div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--g)"></div>2026 GUIDANCE & BALANCE SHEET<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">2026 Guidance</div>
+<div class="fb" style="color:var(--p)">$520–560M</div><div class="fs">2026 Adj. EBITDA</div>
+<div style="margin-top:5px">
+<div class="fr"><span class="fl">3P EBITDA</span><span class="fv g">~80%</span></div>
+<div class="fr"><span class="fl">Leverage</span><span class="fv">4.07x</span></div>
+<div class="fr"><span class="fl">Total Debt</span><span class="fv">~$2.3B</span></div>
+<div class="fr"><span class="fl">Liquidity</span><span class="fv g">~$940M</span></div>
+<div class="fr"><span class="fl">Yield</span><span class="fv o">~8.5%</span></div>
+</div></div>
+<div class="fc"><div class="ft">DKL Unit Economics</div>
+<div class="fr"><span class="fl">Logistics Cost</span><span class="fv">$3.9–5.0/bbl</span></div>
+<div class="fr"><span class="fl">Target (Vistratex)</span><span class="fv g">$2–3/bbl</span></div>
+<div class="fr"><span class="fl">EBITDA Margin</span><span class="fv">~46%</span></div>
+<div class="fr"><span class="fl">Target Margin</span><span class="fv g">50–55%</span></div>
+<div class="fr"><span class="fl">Pipeline Util.</span><span class="fv o">~70%</span></div>
+<div class="fr"><span class="fl">Terminal Util.</span><span class="fv o">~60–70%</span></div>
+</div>
+</div></div>`;
+
+// VISTRATEX TAB — 12 VALUE DIMENSIONS
+document.getElementById('tv').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--g)"></div>VISTRATEX VALUE PROPOSITION<span class="ar">▼</span></div><div class="sb">
+<div class="fc">
+<div class="fb" style="color:var(--g)">+$120–190M</div>
+<div class="fs">EBITDA Improvement Target · 24–36 months</div>
+<div style="margin-top:5px;font-size:8px;color:var(--t2);line-height:1.4">Enable DKL to deliver full-system Operational Optimization — from current state to integrated, high-performance network — through focused portfolio of execution-driven initiatives, starting in 90 days.</div>
+</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>12 VALUE DIMENSIONS<span class="ar">▼</span></div><div class="sb">
+${[
+['EBITDA Performance','$536M','$650-740M','+$120-190M','⭐⭐⭐',75],
+['EBITDA Margin','46%','50-55%','+$40-70M','⭐⭐⭐',65],
+['Throughput Optimization','300k bpd','330-360k','+$12-30M','⭐⭐⭐',70],
+['Third-Party Mix','~80%','83-85%+','+$23-27M','⭐⭐⭐',75],
+['Logistics Cost Efficiency','$3.9-5/bbl','$2-3/bbl','+$70-110M','⭐⭐⭐⭐',55],
+['Pipeline Utilization','~70%','85-95%','+$20-45M','⭐⭐⭐',60],
+['Truck Optimization','High reliance','Reduce 10-20%','+$15-35M','⭐⭐⭐⭐',35],
+['Terminal Utilization','~70%','80-90%','+$6-12M','⭐⭐⭐',60],
+['G&P Expansion','Limited','Strong','+$20-40M','⭐⭐⭐⭐',40],
+['Water Management','Limited','Strong','+$15-30M','⭐⭐⭐⭐',40],
+['Export Optimization','Segregated','Optimized','+$15-30M','⭐⭐⭐',30],
+['Digital Maturity','Fragmented','Integrated','+$25-50M','⭐⭐⭐⭐',25],
+].map(([dim,cur,tgt,val,pri,pct])=>'<div class="vd-row"><div class="vd-lbl">'+dim+'</div><div class="vd-cur" style="color:var(--gd)">'+cur+'</div><div class="vd-bar"><div class="vd-fill" style="width:'+pct+'%;background:var(--gd);opacity:.6"></div><div class="vd-fill" style="width:90%;background:var(--g);opacity:.25"></div></div><div class="vd-val">'+val+'</div></div>').join('')}
+<div style="margin-top:5px;font-size:7px;color:var(--t3)">Gold = current state · Green overlay = target state · Right column = Δ value potential</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--p)"></div>KEY LEVERS<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">Highest Impact (⭐⭐⭐⭐)</div>
+<div class="fr"><span class="fl">Logistics Cost</span><span class="fv g">+$70-110M</span></div>
+<div class="fr"><span class="fl">Truck→Pipeline Shift</span><span class="fv g">+$15-35M</span></div>
+<div class="fr"><span class="fl">G&P Expansion</span><span class="fv g">+$20-40M</span></div>
+<div class="fr"><span class="fl">Water Management</span><span class="fv g">+$15-30M</span></div>
+<div class="fr"><span class="fl">Digital Maturity</span><span class="fv g">+$25-50M</span></div>
+</div>
+<div class="fc"><div class="ft">Execution Approach</div>
+<div class="fr"><span class="fl">Timeline</span><span class="fv">24-36 months</span></div>
+<div class="fr"><span class="fl">Diagnostic</span><span class="fv">2-4 weeks rapid</span></div>
+<div class="fr"><span class="fl">Start</span><span class="fv g">90 days</span></div>
+<div class="fr"><span class="fl">Method</span><span class="fv">LSSMBB / PMP / Agile</span></div>
+</div>
+</div></div>`;
+
+// BENCHMARK TAB — REAL DATA FROM Q4 2025 EARNINGS
+document.getElementById('tb').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>OPERATOR FINANCIALS (FY 2025 ACTUALS)<span class="ar">▼</span></div><div class="sb">
+<div style="overflow-x:auto">
+<table class="ct">
+<tr><th>METRIC</th><th style="color:var(--o)">DKL</th><th style="color:var(--p)">MPLX</th><th style="color:var(--gd)">PAA</th><th style="color:var(--b)">EPD</th><th style="color:var(--g)">ET</th><th style="color:var(--cy)">OKE</th></tr>
+<tr><td>Mkt Cap</td><td>~$2.9B</td><td>~$55B</td><td>~$19B</td><td>~$66B</td><td>~$65B</td><td>~$63B</td></tr>
+<tr><td>FY25 Adj EBITDA</td><td style="color:var(--o)">$535.6M</td><td style="color:var(--g)">$7.0B</td><td>$2.83B</td><td style="color:var(--g)">$9.96B</td><td>$16.1B</td><td style="color:var(--g)">$8.0B+</td></tr>
+<tr><td>2026E EBITDA</td><td>$520-560M</td><td>mid-SD growth</td><td>~$2.75B</td><td>$10.2-10.5B</td><td>$17.3-17.7B</td><td>$8.8-9.2B</td></tr>
+<tr><td>Leverage</td><td style="color:var(--r)">4.07x</td><td>3.7x</td><td>3.9x</td><td style="color:var(--g)">3.3x</td><td>4.0-4.5x</td><td>3.5x tgt</td></tr>
+<tr><td>DCF Coverage</td><td style="color:var(--r)">~1.2x</td><td>1.3x+</td><td>1.5x</td><td style="color:var(--g)">1.8x</td><td style="color:var(--g)">1.77x</td><td>1.3-1.5x</td></tr>
+<tr><td>Yield</td><td style="color:var(--o)">~8.5%</td><td>7.7%</td><td>~8.5%</td><td>6.0%</td><td>7.2%</td><td>4.8%</td></tr>
+<tr><td>Dist Growth</td><td style="color:var(--g)">52 qtrs ↑</td><td style="color:var(--g)">12.5%/yr</td><td style="color:var(--g)">10%/yr</td><td style="color:var(--g)">27 yrs ↑</td><td>3-5%/yr</td><td>4%/yr</td></tr>
+<tr><td>Credit</td><td style="color:var(--r)">NR</td><td>BBB</td><td>BBB-</td><td style="color:var(--g)">A-</td><td>BBB</td><td>BBB</td></tr>
+<tr><td>EV/EBITDA</td><td>~9.6x</td><td>9.2x</td><td>~10x</td><td>10.1x</td><td>7.6x</td><td>10.8x</td></tr>
+<tr><td>Pipeline Mi</td><td>~2,204</td><td>~16,000+</td><td>~20,000+</td><td>~50,000+</td><td>~130,000+</td><td>~50,000+</td></tr>
+<tr><td>Fee-Based %</td><td>~85%</td><td>~90%</td><td>~85%</td><td>~82%</td><td>~90%</td><td>~90%</td></tr>
+</table>
+</div>
+<div style="margin-top:4px;font-size:6px;color:var(--t3)">Sources: SEC 8-K filings, Q4 2025 earnings releases. Market caps approximate as of Mar 2026.</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--g)"></div>EBITDA SCALE COMPARISON (FY25)<span class="ar">▼</span></div><div class="sb">
+${[['ET','$16.1B',100,'var(--g)'],['EPD','$9.96B',62,'var(--b)'],['OKE','$8.0B+',50,'var(--cy)'],['MPLX','$7.0B',43,'var(--p)'],['PAA','$2.83B',18,'var(--gd)'],['DKL','$535.6M',3.3,'var(--o)']].map(([n,v,w,c])=>'<div class="bi" style="margin-bottom:2px"><div class="bl" style="font-size:7px">'+n+'</div><div class="bt"><div class="bf" style="width:'+w+'%;background:'+c+'">'+v+'</div></div></div>').join('')}
+<div style="font-size:6px;color:var(--t3);margin-top:2px">DKL is ~30x smaller than the largest benchmark peers by EBITDA</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--r)"></div>VISTRATEX BENCHMARK (Presentation Slide 20)<span class="ar">▼</span></div><div class="sb">
+<div style="overflow-x:auto">
+<table class="ct">
+<tr><th>DIMENSION</th><th style="color:var(--o)">DKL</th><th style="color:var(--p)">MPLX</th><th style="color:var(--gd)">PAA</th><th style="color:var(--b)">EPD</th><th style="color:var(--g)">ET</th><th style="color:var(--cy)">OKE</th></tr>
+<tr><td>EBITDA Margin</td><td style="color:var(--r)">~46%</td><td>55-65%</td><td>45-55%</td><td style="color:var(--g)">60-70%</td><td>50-60%</td><td>45-55%</td></tr>
+<tr><td>Cost Efficiency</td><td style="color:var(--r)">Medium</td><td style="color:var(--g)">High</td><td style="color:var(--g)">High</td><td style="color:var(--g)">Best</td><td style="color:var(--g)">High</td><td style="color:var(--g)">High</td></tr>
+<tr><td>Pipeline Util.</td><td style="color:var(--r)">~70%</td><td>85-95%</td><td>85-95%</td><td style="color:var(--g)">90%+</td><td>85-95%</td><td>85-95%</td></tr>
+<tr><td>Terminal Util.</td><td style="color:var(--r)">60-70%</td><td>80-90%</td><td>80-90%</td><td style="color:var(--g)">85-95%</td><td>80-90%</td><td>80-90%</td></tr>
+<tr><td>Truck Depend.</td><td style="color:var(--r)">High</td><td style="color:var(--g)">Low</td><td style="color:var(--g)">Low</td><td style="color:var(--g)">V.Low</td><td style="color:var(--g)">Low</td><td style="color:var(--g)">Low</td></tr>
+<tr><td>Customer Mix</td><td style="color:var(--r)">Captive</td><td>Diversified</td><td>Diversified</td><td style="color:var(--g)">Highly div.</td><td style="color:var(--g)">Highly div.</td><td>Diversified</td></tr>
+<tr><td>Water/G&P</td><td style="color:var(--gd)">Growing</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td></tr>
+<tr><td>Digital</td><td style="color:var(--r)">Low</td><td>Med-High</td><td>Medium</td><td style="color:var(--g)">High</td><td>Med-High</td><td>Medium</td></tr>
+<tr><td>Commercial</td><td style="color:var(--r)">Low</td><td style="color:var(--g)">High</td><td style="color:var(--g)">High</td><td style="color:var(--g)">V.High</td><td style="color:var(--g)">V.High</td><td>Med-High</td></tr>
+<tr><td>Export Cap.</td><td style="color:var(--r)">Limited</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Best</td><td style="color:var(--g)">V.Strong</td><td>Moderate</td></tr>
+<tr><td>Capital Access</td><td style="color:var(--r)">Constrained</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Strong</td><td style="color:var(--g)">Top-tier</td><td style="color:var(--g)">Top-tier</td><td style="color:var(--g)">Strong</td></tr>
+</table>
+</div>
+<div style="margin-top:4px;font-size:6px;color:var(--t3)">Source: Vistratex Overview Presentation (Slide 20), Mar 2026. Red = DKL gap. Green = peer strength.</div>
+</div></div>
+<div class="sec cl"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>DKL GAP ANALYSIS vs PEERS<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">Critical Gaps (DKL vs Benchmark Avg)</div>
+${[['EBITDA Margin','46%','55-65%',46,60],['Leverage','4.07x','3.3-3.7x',68,45],['Coverage','1.2x','1.5-1.8x',30,60],['Pipeline Util.','70%','85-95%',70,90],['Terminal Util.','65%','80-90%',65,85],['Cost $/bbl','$3.9-5','$2-3',55,80],['Truck Depend.','High','Low',20,80],['Digital','Low','Med-High',20,65]].map(([dim,dkl,peer,pC,pT])=>'<div style="margin-bottom:3px"><div style="font-size:7px;font-weight:600;display:flex;justify-content:space-between"><span>'+dim+'</span><span style="color:var(--r);font-size:6px">'+dkl+' vs '+peer+'</span></div><div class="spr"><span class="spl" style="color:var(--r)">DKL</span><div class="spt"><div class="spf" style="width:'+pC+'%;background:var(--r)"></div></div></div><div class="spr"><span class="spl" style="color:var(--g)">Peer</span><div class="spt"><div class="spf" style="width:'+pT+'%;background:var(--g)"></div></div></div></div>').join('')}
+</div>
+</div></div>`;
+
+// PEERS TAB — Real data from Q4 2025 earnings
+document.getElementById('tp').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>SIMILAR MARKET CAP PEERS (REAL DATA)<span class="ar">▼</span></div><div class="sb">
+<div style="overflow-x:auto">
+<table class="ct">
+<tr><th>METRIC</th><th style="color:var(--o)">DKL</th><th style="color:var(--pk)">GEL</th><th style="color:var(--t2)">USAC</th><th style="color:var(--gd)">SUN</th><th style="color:var(--tl)">GLP</th></tr>
+<tr><td>Mkt Cap</td><td>~$2.9B</td><td>~$2.2B</td><td>~$2.9B</td><td>~$8.5B</td><td>~$1.8B</td></tr>
+<tr><td>FY25 EBITDA</td><td style="color:var(--o)">$535.6M</td><td>$588.1M</td><td style="color:var(--g)">$613.8M</td><td>$1.76B</td><td>~$400M</td></tr>
+<tr><td>2026E EBITDA</td><td>$520-560M</td><td>$500-610M</td><td style="color:var(--g)">$770-800M</td><td>~$1.9B+</td><td>~$420M</td></tr>
+<tr><td>Yield</td><td style="color:var(--o)">~8.5%</td><td>4.1%</td><td>7.8%</td><td>6.7%</td><td>7.2%</td></tr>
+<tr><td>Leverage</td><td style="color:var(--r)">4.07x</td><td style="color:var(--r)">5.12x</td><td>4.0x</td><td>4.0x</td><td style="color:var(--g)">3.5x</td></tr>
+<tr><td>Coverage</td><td style="color:var(--r)">~1.22x</td><td>N/A</td><td>1.55x</td><td style="color:var(--g)">1.7x</td><td>1.4x</td></tr>
+<tr><td>Dist Growth</td><td style="color:var(--g)">52 qtrs ↑</td><td>Restarting</td><td style="color:var(--r)">Flat 7yr</td><td>5% tgt</td><td>Growing</td></tr>
+<tr><td>Utilization</td><td style="color:var(--r)">~70%</td><td>N/A</td><td style="color:var(--g)">94.5%</td><td>N/A</td><td>N/A</td></tr>
+<tr><td>3P Revenue</td><td style="color:var(--g)">~80%</td><td>~95%</td><td>100%</td><td>~70%</td><td>100%</td></tr>
+<tr><td>Beta</td><td style="color:var(--g)">0.51</td><td style="color:var(--r)">1.35</td><td>1.10</td><td>0.95</td><td>0.85</td></tr>
+<tr><td>Credit</td><td style="color:var(--r)">NR</td><td style="color:var(--r)">B</td><td>B+</td><td>BB+</td><td>B+</td></tr>
+</table>
+</div>
+<div style="margin-top:4px;font-size:6px;color:var(--t3)">Sources: SEC 8-K filings, Q4 2025 earnings. GEL leverage from bank calc. USAC util = fleet horsepower. SUN larger-scale peer.</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--g)"></div>FY25 EBITDA — SIMILAR CAP PEERS<span class="ar">▼</span></div><div class="sb">
+${[['USAC',613.8,'var(--t2)'],['GEL',588.1,'var(--pk)'],['DKL',535.6,'var(--o)'],['GLP',400,'var(--tl)'],['SUN*',700,'var(--gd)']].map(([n,v,c])=>'<div class="bi" style="margin-bottom:2px"><div class="bl" style="font-size:7px">'+n+'</div><div class="bt"><div class="bf" style="width:'+(v/700*100)+'%;background:'+c+'">$'+v+'M</div></div></div>').join('')}
+<div style="font-size:6px;color:var(--t3);margin-top:2px">*SUN actual $1.76B, capped at $700M for visual comparison</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--r)"></div>LEVERAGE — LOWER IS BETTER<span class="ar">▼</span></div><div class="sb">
+${[['GEL',5.12,'var(--r)'],['DKL',4.07,'var(--r)'],['USAC',4.0,'var(--gd)'],['SUN',4.0,'var(--gd)'],['GLP',3.5,'var(--g)']].map(([n,v,c])=>'<div class="bi" style="margin-bottom:2px"><div class="bl" style="font-size:7px">'+n+'</div><div class="bt"><div class="bf" style="width:'+(v/6*100)+'%;background:'+c+'">'+v+'x</div></div></div>').join('')}
+</div></div>
+<div class="sec cl"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--p)"></div>PEER PROFILES (VERIFIED)<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">GEL — Genesis Energy ($2.2B)</div>
+<div class="fr"><span class="fl">FY25 TTM EBITDA</span><span class="fv">$588.1M</span></div>
+<div class="fr"><span class="fl">2026E EBITDA</span><span class="fv g">$500-610M (15-20%↑)</span></div>
+<div class="fr"><span class="fl">Leverage</span><span class="fv r">5.12x bank calc</span></div>
+<div class="fr"><span class="fl">Distribution</span><span class="fv">$0.18/qtr (+9.1% QoQ)</span></div>
+<div class="fr"><span class="fl">Focus</span><span class="fv">GoM offshore pipes, marine</span></div>
+<div class="fr"><span class="fl">Key Move</span><span class="fv">Sold soda ash $1B</span></div>
+</div>
+<div class="fc"><div class="ft">USAC — USA Compression ($2.9B)</div>
+<div class="fr"><span class="fl">FY25 EBITDA</span><span class="fv g">$613.8M (record)</span></div>
+<div class="fr"><span class="fl">2026E EBITDA</span><span class="fv g">$770-800M (w/ JW Power)</span></div>
+<div class="fr"><span class="fl">Leverage</span><span class="fv">4.0x (→3.75x target)</span></div>
+<div class="fr"><span class="fl">Fleet</span><span class="fv">3.9M HP, 94.5% util</span></div>
+<div class="fr"><span class="fl">DCF Coverage</span><span class="fv">1.55x (→1.6x tgt)</span></div>
+<div class="fr"><span class="fl">Risk</span><span class="fv r">Neg equity -$112.5M</span></div>
+</div>
+<div class="fc"><div class="ft">SUN — Sunoco LP ($8.5B)</div>
+<div class="fr"><span class="fl">FY25 EBITDA</span><span class="fv">~$1.76B</span></div>
+<div class="fr"><span class="fl">Distribution</span><span class="fv g">$0.93/qtr (+5.1% YoY)</span></div>
+<div class="fr"><span class="fl">Coverage</span><span class="fv g">1.7x</span></div>
+<div class="fr"><span class="fl">Focus</span><span class="fv">Motor fuel dist, 40 states</span></div>
+<div class="fr"><span class="fl">Key Contract</span><span class="fv">7-Eleven (~30% vol)</span></div>
+<div class="fr"><span class="fl">Note</span><span class="fv">Larger scale peer, NuStar acq</span></div>
+</div>
+</div></div>`;
+
+// RAU TAB
+document.getElementById('tr').innerHTML=`
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--g)"></div>THROUGHPUT VOLUMES (FY 2025)<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">Midland Gathering</div>
+<div class="spr"><span class="spl">Vol</span><div class="spt"><div class="spf" style="width:63%;background:var(--g)"></div></div><span class="spv" style="color:var(--g)">219,782 bpd</span></div>
+<div class="spr"><span class="spl">Cap</span><div class="spt"><div class="spf" style="width:100%;background:var(--t3)"></div></div><span class="spv">350,000 bpd</span></div>
+</div>
+<div class="fc"><div class="ft">Delaware Crude</div>
+<div class="spr"><span class="spl">Vol</span><div class="spt"><div class="spf" style="width:70%;background:var(--g)"></div></div><span class="spv" style="color:var(--g)">138,575 bpd</span></div>
+<div class="spr"><span class="spl">ΔYoY</span><div class="spt"><div class="spf" style="width:50%;background:var(--g)"></div></div><span class="spv" style="color:var(--g)">+11.8%</span></div>
+</div>
+<div class="fc"><div class="ft">Delaware Gas</div>
+<div class="spr"><span class="spl">Vol</span><div class="spt"><div class="spf" style="width:71%;background:var(--cy)"></div></div><span class="spv" style="color:var(--cy)">62,111 Mcf/d</span></div>
+<div class="spr"><span class="spl">Cap</span><div class="spt"><div class="spf" style="width:100%;background:var(--t3)"></div></div><span class="spv">88,000 Mcf/d</span></div>
+</div>
+<div class="fc"><div class="ft">Water Disposal</div>
+<div class="spr"><span class="spl">Vol</span><div class="spt"><div class="spf" style="width:95%;background:var(--cy)"></div></div><span class="spv" style="color:var(--cy)">587,419 bpd</span></div>
+<div class="spr"><span class="spl">ΔYoY</span><div class="spt"><div class="spf" style="width:80%;background:var(--g)"></div></div><span class="spv" style="color:var(--g)">+109%</span></div>
+</div>
+</div></div>
+<div class="sec"><div class="sh" onclick="ts(this)"><div class="d" style="background:var(--o)"></div>VISTRATEX UTILIZATION TARGETS<span class="ar">▼</span></div><div class="sb">
+<div class="fc"><div class="ft">Current vs Target (Vistratex)</div>
+${[['Pipeline Util.','70%','85-95%',70,90],['Terminal Util.','60-70%','80-90%',65,85],['Throughput','300k bpd','330-360k',68,82],['Logistics $/bbl','$3.9-5','$2-3',55,85],['EBITDA Margin','46%','50-55%',60,80]].map(([dim,cur,tgt,pctC,pctT])=>'<div style="margin-bottom:4px"><div style="font-size:8px;font-weight:600;display:flex;justify-content:space-between"><span>'+dim+'</span><span style="font-size:7px;color:var(--t3)">'+cur+' → '+tgt+'</span></div><div class="spr"><span class="spl" style="color:var(--gd)">Now</span><div class="spt"><div class="spf" style="width:'+pctC+'%;background:var(--gd)"></div></div></div><div class="spr"><span class="spl" style="color:var(--g)">Tgt</span><div class="spt"><div class="spf" style="width:'+pctT+'%;background:var(--g)"></div></div></div></div>').join('')}
+</div>
+</div></div>`;
+</script>
+</body>
+</html>
